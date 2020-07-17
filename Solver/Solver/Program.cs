@@ -258,6 +258,26 @@ namespace Solver
             return Evaluate(args[":0"]);
         }
 
+        public static LispNode CarPatternFunc(Dictionary<string, LispNode> args)
+        {
+            return Evaluate(args[":0"]);
+        }
+
+        public static LispNode CdrPatternFunc(Dictionary<string, LispNode> args)
+        {
+            return Evaluate(args[":1"]);
+        }
+
+        public static LispNode IsNilPatternFunc(Dictionary<string, LispNode> args)
+        {
+            var arg0 = args[":0"];
+            return new LispNode()
+            {
+                Type = LispNodeType.Token,
+                Text = arg0.Type == LispNodeType.Token && arg0.Text == "nil" ? "t" : "f"
+            };
+        }
+
         public static LispNode ApPatternFunc(Dictionary<string, LispNode> args)
         {
             var ans = new LispNode() { Type = LispNodeType.Open };
@@ -304,7 +324,10 @@ namespace Solver
                 new PatternFunc("ap ap t :0 :1", TPatternFunc),
                 new PatternFunc("ap ap f :0 :1", FPatternFunc),
                 new PatternFunc("ap i :0", IPatternFunc),
-                new PatternFunc("ap :0 :1", ApPatternFunc)
+                new PatternFunc("ap car ap ap cons :0 :1", CarPatternFunc),
+                new PatternFunc("ap cdr ap ap cons :0 :1", CdrPatternFunc),
+                new PatternFunc("ap isnil :0", IsNilPatternFunc),
+                new PatternFunc("ap :0 :1", ApPatternFunc),
             };
 
         public static LispNode EvaluateOne(LispNode root)

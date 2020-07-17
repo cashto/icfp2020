@@ -108,6 +108,10 @@ namespace UnitTests
             TestEvaluate("ap i i", "i");
             TestEvaluate("ap i add", "add");
             TestEvaluate("ap i ap add 1", "ap add 1");
+            TestEvaluate("ap car ap ap cons x0 x1", "x0");
+            TestEvaluate("ap cdr ap ap cons x0 x1", "x1");
+            TestEvaluate("ap isnil nil", "t");
+            TestEvaluate("ap isnil ap ap cons x0 x1", "f");
         }
 
         private void TestEvaluate(string fn, string reference)
