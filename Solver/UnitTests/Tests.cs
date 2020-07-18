@@ -133,6 +133,7 @@ namespace UnitTests
             TestEvaluate("ap isnil nil", "t");
             TestEvaluate("ap isnil ap ap cons x0 x1", "f");
             TestEvaluate("ap dec ap ap add x0 1", "x0");
+            TestEvaluate("ap s t", "f");
         }
 
         [TestMethod]
