@@ -6,6 +6,7 @@ using System.Text;
 using IcfpUtils;
 using System.Reflection.Metadata.Ecma335;
 using System.Data;
+using System.Diagnostics;
 
 namespace Solver
 {
@@ -25,26 +26,47 @@ namespace Solver
                 symbols[symbol] = value;
             }
 
-            Evaluate(symbols["galaxy"], symbols);
+            var state = Parse("nil");
+            var vector = Parse("ap ap cons 0 0");
+            var protocolResult = Interact(symbols["galaxy"], state, vector, symbols);
+        }
+
+        static LispNode Interact(
+            LispNode protocol,
+            LispNode state,
+            LispNode vector,
+            Dictionary<string, LispNode> symbols)
+        {
+            var protocolResultRoot = new LispNode() { Type = LispNodeType.Open };
+            protocolResultRoot.Children.Add(new LispNode() { Type = LispNodeType.Open });
+            protocolResultRoot.Children.First().Children.Add(protocol);
+            protocolResultRoot.Children.First().Children.Add(state);
+            protocolResultRoot.Children.Add(vector);
+            return Evaluate(protocolResultRoot, symbols, debug: true);
         }
 
         public static LispNode Evaluate(
             LispNode root,
-            Dictionary<string, LispNode> symbols = null)
+            Dictionary<string, LispNode> symbols,
+            bool debug = false)
         {
             while (true)
             {
-                var result = EvaluateOne(root);
-                if (object.ReferenceEquals(root, result))
+                if (debug)
                 {
-                    result = DoSubstitutions(root, symbols);
-                    if (object.ReferenceEquals(root, result))
-                    {
-                        return root;
-                    }
+                    Console.WriteLine("--------");
+                    Console.WriteLine(root);
+                    Console.WriteLine("--------");
                 }
 
-                root = result;
+                var newRoot = EvaluateOne(root, symbols);
+
+                if (newRoot == null)
+                {
+                    return root;
+                }
+
+                root = newRoot;
             }
         }
 
@@ -79,6 +101,7 @@ namespace Solver
             throw new Exception($"Could not parse: {s}");
         }
 
+        /*
         static LispNode DoSubstitutions(LispNode root, Dictionary<string, LispNode> symbols)
         {
             if (symbols == null)
@@ -105,6 +128,7 @@ namespace Solver
                 return ans;
             }
         }
+        */
 
         static long? TryParseInt(LispNode node)
         {
@@ -124,12 +148,13 @@ namespace Solver
 
         static LispNode NumericFunc(
             Dictionary<string, LispNode> args,
+            Dictionary<string, LispNode> symbols,
             string funcName,
             Func<long, long, string> fn)
         {
             var arity = args.Count;
-            var arg1Tree = Evaluate(args[":0"]);
-            var arg2Tree = arity < 2 ? null : Evaluate(args[":1"]);
+            var arg1Tree = Evaluate(args["x0"], symbols);
+            var arg2Tree = arity < 2 ? null : Evaluate(args["x1"], symbols);
 
             long? arg1 = TryParseInt(arg1Tree);
             long? arg2 = arg2Tree == null ? 0 : TryParseInt(arg2Tree);
@@ -143,6 +168,8 @@ namespace Solver
                 };
             }
 
+            throw new Exception("Unexpected");
+/*
             var ans = new LispNode() { Type = LispNodeType.Open };
             ans.Children.Add(new LispNode() { Type = LispNodeType.Token, Text = funcName });
             ans.Children.Add(arg1Tree);
@@ -155,122 +182,158 @@ namespace Solver
                 ans.Children.Add(arg2Tree);
             }
 
-            if (object.ReferenceEquals(arg1Tree, args[":0"]) &&
-                (arity == 1 || object.ReferenceEquals(arg2Tree, args[":1"])))
+            if (object.ReferenceEquals(arg1Tree, args["x0"]) &&
+                (arity == 1 || object.ReferenceEquals(arg2Tree, args["x1"])))
             {
                 return null;
             }
 
             return ans;
+*/
         }
 
-        public static LispNode IncPatternFunc(Dictionary<string, LispNode> args)
+        static LispNode IncPatternFunc(
+            Dictionary<string, LispNode> args,
+            Dictionary<string, LispNode> symbols)
         {
-            return NumericFunc(args, "inc", (a, b) => (a + 1).ToString());
+            return NumericFunc(args, symbols, "inc", (a, b) => (a + 1).ToString());
         }
 
-        public static LispNode DecPatternFunc(Dictionary<string, LispNode> args)
+        static LispNode DecPatternFunc(
+            Dictionary<string, LispNode> args,
+            Dictionary<string, LispNode> symbols)
         {
-            return NumericFunc(args, "dec", (a, b) => (a - 1).ToString());
+            return NumericFunc(args, symbols, "dec", (a, b) => (a - 1).ToString());
         }
 
-        public static LispNode AddPatternFunc(Dictionary<string, LispNode> args)
+        static LispNode AddPatternFunc(
+            Dictionary<string, LispNode> args,
+            Dictionary<string, LispNode> symbols)
         {
-            return NumericFunc(args, "add", (a, b) => (a + b).ToString());
+            return NumericFunc(args, symbols, "add", (a, b) => (a + b).ToString());
         }
 
-        public static LispNode NegPatternFunc(Dictionary<string, LispNode> args)
+        static LispNode NegPatternFunc(
+            Dictionary<string, LispNode> args,
+            Dictionary<string, LispNode> symbols)
         {
-            return NumericFunc(args, "neg", (a, b) => (-a).ToString());
+            return NumericFunc(args, symbols, "neg", (a, b) => (-a).ToString());
         }
 
-        public static LispNode MulPatternFunc(Dictionary<string, LispNode> args)
+        static LispNode MulPatternFunc(
+            Dictionary<string, LispNode> args,
+            Dictionary<string, LispNode> symbols)
         {
-            return NumericFunc(args, "mul", (a, b) => (a * b).ToString());
+            return NumericFunc(args, symbols, "mul", (a, b) => (a * b).ToString());
         }
 
-        public static LispNode DivPatternFunc(Dictionary<string, LispNode> args)
+        static LispNode DivPatternFunc(
+            Dictionary<string, LispNode> args,
+            Dictionary<string, LispNode> symbols)
         {
-            return NumericFunc(args, "div", (a, b) => (a / b).ToString());
+            return NumericFunc(args, symbols, "div", (a, b) => (a / b).ToString());
         }
 
-        public static LispNode EqPatternFunc(Dictionary<string, LispNode> args)
+        static LispNode EqPatternFunc(
+            Dictionary<string, LispNode> args,
+            Dictionary<string, LispNode> symbols)
         {
-            return NumericFunc(args, "eq", (a, b) => a == b ? "t" : "f");
+            return NumericFunc(args, symbols, "eq", (a, b) => a == b ? "t" : "f");
         }
 
-        public static LispNode LtPatternFunc(Dictionary<string, LispNode> args)
+        static LispNode LtPatternFunc(
+            Dictionary<string, LispNode> args,
+            Dictionary<string, LispNode> symbols)
         {
-            return NumericFunc(args, "lt", (a, b) => a < b ? "t" : "f");
+            return NumericFunc(args, symbols, "lt", (a, b) => a < b ? "t" : "f");
         }
 
-        public static LispNode SPatternFunc(Dictionary<string, LispNode> args)
+        static LispNode SPatternFunc(
+            Dictionary<string, LispNode> args,
+            Dictionary<string, LispNode> symbols)
         {
             // S : ap ap ap s x0 x1 x2   =   ap ap x0 x2 ap x1 x2
             var newRoot = new LispNode() { Type = LispNodeType.Open };
             newRoot.Children.Add(new LispNode() { Type = LispNodeType.Open });
             newRoot.Children.Add(new LispNode() { Type = LispNodeType.Open });
-            var eval2 = Evaluate(args[":2"]);
-            newRoot.Children.First().Children.Add(Evaluate(args[":0"]));
-            newRoot.Children.First().Children.Add(eval2);
-            newRoot.Children.Last().Children.Add(Evaluate(args[":1"]));
-            newRoot.Children.Last().Children.Add(eval2);
+            var args2 = Evaluate(args["x2"], symbols);
+            //var args2 = args["x2"];
+            newRoot.Children.First().Children.Add(args["x0"]);
+            newRoot.Children.First().Children.Add(args2);
+            newRoot.Children.Last().Children.Add(args["x1"]);
+            newRoot.Children.Last().Children.Add(args2);
             return newRoot;
         }
 
-        public static LispNode CPatternFunc(Dictionary<string, LispNode> args)
+        static LispNode CPatternFunc(
+            Dictionary<string, LispNode> args,
+            Dictionary<string, LispNode> symbols)
         {
             // C : ap ap ap c x0 x1 x2   =   ap ap x0 x2 x1
             var newRoot = new LispNode() { Type = LispNodeType.Open };
             newRoot.Children.Add(new LispNode() { Type = LispNodeType.Open });
-            newRoot.Children.First().Children.Add(Evaluate(args[":0"]));
-            newRoot.Children.First().Children.Add(Evaluate(args[":2"]));
-            newRoot.Children.Add(Evaluate(args[":1"]));
+            newRoot.Children.First().Children.Add(args["x0"]);
+            newRoot.Children.First().Children.Add(args["x2"]);
+            newRoot.Children.Add(args["x1"]);
             return newRoot;
         }
 
-        public static LispNode BPatternFunc(Dictionary<string, LispNode> args)
+        static LispNode BPatternFunc(
+            Dictionary<string, LispNode> args,
+            Dictionary<string, LispNode> symbols)
         {
             // B : ap ap ap b x0 x1 x2   =   ap x0 ap x1 x2
             var newRoot = new LispNode() { Type = LispNodeType.Open };
-            newRoot.Children.Add(Evaluate(args[":0"]));
+            newRoot.Children.Add(args["x0"]);
             newRoot.Children.Add(new LispNode() { Type = LispNodeType.Open });
-            newRoot.Children.Last().Children.Add(Evaluate(args[":1"]));
-            newRoot.Children.Last().Children.Add(Evaluate(args[":2"]));
+            newRoot.Children.Last().Children.Add(args["x1"]);
+            newRoot.Children.Last().Children.Add(args["x2"]);
             return newRoot;
         }
 
-        public static LispNode TPatternFunc(Dictionary<string, LispNode> args)
+        static LispNode TPatternFunc(
+            Dictionary<string, LispNode> args,
+            Dictionary<string, LispNode> symbols)
         {
             // t : ap ap t x0 x1   =   x0
-            return Evaluate(args[":0"]);
+            return args["x0"];
         }
 
-        public static LispNode FPatternFunc(Dictionary<string, LispNode> args)
+        static LispNode FPatternFunc(
+            Dictionary<string, LispNode> args,
+            Dictionary<string, LispNode> symbols)
         {
             // f : ap ap f x0 x1   =   x1
-            return Evaluate(args[":1"]);
+            return args["x1"];
         }
 
-        public static LispNode IPatternFunc(Dictionary<string, LispNode> args)
+        static LispNode IPatternFunc(
+            Dictionary<string, LispNode> args,
+            Dictionary<string, LispNode> symbols)
         {
             // ap i x0 = x0
-            return Evaluate(args[":0"]);
+            return args["x0"];
         }
 
-        public static LispNode CarPatternFunc(Dictionary<string, LispNode> args)
+        static LispNode CarPatternFunc(
+            Dictionary<string, LispNode> args,
+            Dictionary<string, LispNode> symbols)
         {
-            return Evaluate(args[":0"]);
+            return args["x0"];
         }
 
-        public static LispNode CdrPatternFunc(Dictionary<string, LispNode> args)
+        static LispNode CdrPatternFunc(
+            Dictionary<string, LispNode> args,
+            Dictionary<string, LispNode> symbols)
         {
-            return Evaluate(args[":1"]);
+            return args["x1"];
         }
 
-        public static LispNode IsNilPatternFunc(Dictionary<string, LispNode> args)
+        static LispNode IsNilPatternFunc(
+            Dictionary<string, LispNode> args,
+            Dictionary<string, LispNode> symbols)
         {
-            var arg0 = args[":0"];
+            var arg0 = Evaluate(args["x0"], symbols);
             return new LispNode()
             {
                 Type = LispNodeType.Token,
@@ -278,14 +341,28 @@ namespace Solver
             };
         }
 
-        public static LispNode ApPatternFunc(Dictionary<string, LispNode> args)
+        static LispNode ApPatternFunc(
+            Dictionary<string, LispNode> args,
+            Dictionary<string, LispNode> symbols)
         {
             var ans = new LispNode() { Type = LispNodeType.Open };
+            var arg0 = args["x0"];
+            var arg1 = args["x1"];
 
-            ans.Children.Add(Evaluate(args[":0"]));
-            ans.Children.Add(Evaluate(args[":1"]));
-            if (object.ReferenceEquals(ans.Children.First(), args[":0"]) &&
-                object.ReferenceEquals(ans.Children.Last(), args[":1"]))
+            ans.Children.Add(Evaluate(arg0, symbols));
+            if (!object.ReferenceEquals(ans.Children.First(), arg0))
+            {
+                ans.Children.Add(arg1);
+                return ans;
+            }
+
+            if (arg1.Type == LispNodeType.Token && arg1.Text.StartsWith(':'))
+            {
+                return null;
+            }
+
+            ans.Children.Add(Evaluate(arg1, symbols));
+            if (object.ReferenceEquals(ans.Children.Last(), arg1))
             {
                 return null;
             }
@@ -293,56 +370,120 @@ namespace Solver
             return ans;
         }
 
+        static LispNode DereferencePatternFunc(
+            Dictionary<string, LispNode> args,
+            Dictionary<string, LispNode> symbols)
+        {
+            var arg0 = args["x0"];
+            if (arg0.Type != LispNodeType.Token)
+            {
+                return null;
+            }
+
+            if (!symbols.ContainsKey(arg0.Text))
+            {
+                return null;
+            }
+
+            return symbols[arg0.Text];
+        }
+
+        static LispNode ConsPatternFunc(
+            Dictionary<string, LispNode> args,
+            Dictionary<string, LispNode> symbols)
+        {
+            var root = new LispNode() { Type = LispNodeType.Open };
+            root.Children.Add(new LispNode() { Type = LispNodeType.Open });
+            root.Children.First().Children.Add(args["x2"]);
+            root.Children.First().Children.Add(args["x0"]);
+            root.Children.Add(args["x1"]);
+            return root;
+        }
+
+        static LispNode NotImplementedPatternFunc(
+            Dictionary<string, LispNode> args,
+            Dictionary<string, LispNode> symbols)
+        {
+            throw new NotImplementedException();
+        }
+        
         class PatternFunc
         {
             public PatternFunc(
                 string pattern,
-                Func<Dictionary<string, LispNode>, LispNode> func)
+                Func<Dictionary<string, LispNode>, Dictionary<string, LispNode>, LispNode> func)
             {
                 Pattern = Parse(pattern);
                 Func = func;
             }
 
             public LispNode Pattern { get; private set; }
-            public Func<Dictionary<string, LispNode>, LispNode> Func { get; private set; }
+            public Func<Dictionary<string, LispNode>, Dictionary<string, LispNode>, LispNode> Func { get; private set; }
         }
 
         static List<PatternFunc> evalList =
             new List<PatternFunc>()
             {
-                new PatternFunc("ap inc :0", IncPatternFunc),
-                new PatternFunc("ap dec :0", DecPatternFunc),
-                new PatternFunc("ap ap add :0 :1", AddPatternFunc),
-                new PatternFunc("ap ap mul :0 :1", MulPatternFunc),
-                new PatternFunc("ap ap div :0 :1", DivPatternFunc),
-                new PatternFunc("ap ap eq :0 :1", EqPatternFunc),
-                new PatternFunc("ap ap lt :0 :1", LtPatternFunc),
-                new PatternFunc("ap neg :0", NegPatternFunc),
-                new PatternFunc("ap ap ap s :0 :1 :2", SPatternFunc),
-                new PatternFunc("ap ap ap c :0 :1 :2", CPatternFunc),
-                new PatternFunc("ap ap ap b :0 :1 :2", BPatternFunc),
-                new PatternFunc("ap ap t :0 :1", TPatternFunc),
-                new PatternFunc("ap ap f :0 :1", FPatternFunc),
-                new PatternFunc("ap i :0", IPatternFunc),
-                new PatternFunc("ap car ap ap cons :0 :1", CarPatternFunc),
-                new PatternFunc("ap cdr ap ap cons :0 :1", CdrPatternFunc),
-                new PatternFunc("ap isnil :0", IsNilPatternFunc),
-                new PatternFunc("ap :0 :1", ApPatternFunc),
+                new PatternFunc("ap inc x0", IncPatternFunc),
+                new PatternFunc("ap dec x0", DecPatternFunc),
+                new PatternFunc("ap ap add x0 x1", AddPatternFunc),
+                new PatternFunc("ap ap mul x0 x1", MulPatternFunc),
+                new PatternFunc("ap ap div x0 x1", DivPatternFunc),
+                new PatternFunc("ap ap eq x0 x1", EqPatternFunc),
+                new PatternFunc("ap ap lt x0 x1", LtPatternFunc),
+                new PatternFunc("ap neg x0", NegPatternFunc),
+                new PatternFunc("ap ap ap s x0 x1 x2", SPatternFunc),
+                new PatternFunc("ap ap ap c x0 x1 x2", CPatternFunc),
+                new PatternFunc("ap ap ap b x0 x1 x2", BPatternFunc),
+                new PatternFunc("ap ap t x0 x1", TPatternFunc),
+                new PatternFunc("ap ap f x0 x1", FPatternFunc),
+                new PatternFunc("ap i x0", IPatternFunc),
+                new PatternFunc("ap car ap ap cons x0 x1", CarPatternFunc),
+                new PatternFunc("ap cdr ap ap cons x0 x1", CdrPatternFunc),
+                new PatternFunc("ap isnil x0", IsNilPatternFunc),
+                new PatternFunc("ap ap ap cons x0 x1 x2", ConsPatternFunc),
+
+                new PatternFunc("ap ap add x0 0", NotImplementedPatternFunc),
+                new PatternFunc("ap ap mul x0 0", NotImplementedPatternFunc),
+                new PatternFunc("ap ap mul x0 1", NotImplementedPatternFunc),
+                new PatternFunc("ap ap div x0 1", NotImplementedPatternFunc),
+                new PatternFunc("ap ap eq x0 x0", NotImplementedPatternFunc),
+                new PatternFunc("ap inc ap dec x0", NotImplementedPatternFunc),
+                new PatternFunc("ap dec ap inc x0", NotImplementedPatternFunc),
+                new PatternFunc("ap dec ap ap add x0 1", NotImplementedPatternFunc),
+                new PatternFunc("ap car x2", NotImplementedPatternFunc),
+                new PatternFunc("ap cdr x2", NotImplementedPatternFunc),
+                new PatternFunc("ap nil x0", NotImplementedPatternFunc),
+
+                new PatternFunc("ap x0 x1", ApPatternFunc),
+                new PatternFunc("x0", DereferencePatternFunc),
             };
 
-        public static LispNode EvaluateOne(LispNode root)
+        static LispNode EvaluateOne(
+            LispNode root,
+            Dictionary<string, LispNode> symbols)
         {
             foreach (var patternFunc in evalList)
             {
                 var matches = Match(root, patternFunc.Pattern);
                 if (matches != null)
                 {
-                    var ret = patternFunc.Func(matches);
-                    return ret ?? root;
+                    var ret = patternFunc.Func(matches, symbols);
+                    if (ret != null)
+                    {
+                        Console.WriteLine(patternFunc.Func.Method.Name);
+                        foreach (var item in matches)
+                        {
+                            Console.WriteLine($"   {item.Key}: {item.Value}");
+                        }
+                        Console.WriteLine($"   -> {ret}");
+
+                        return ret;
+                    }
                 }
             }
 
-            return root;
+            return null;
         }
 
         public static Dictionary<string, LispNode> Match(
@@ -382,7 +523,7 @@ namespace Solver
 
                 return ans;
             }
-            else if (pattern.Text.StartsWith(':'))
+            else if (pattern.Text.StartsWith('x'))
             {
                 ans[pattern.Text] = root;
                 return ans;

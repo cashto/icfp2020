@@ -1,5 +1,8 @@
+using IcfpUtils;
+using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Solver;
+using System.Runtime.InteropServices;
 
 namespace UnitTests
 {
@@ -114,9 +117,20 @@ namespace UnitTests
             TestEvaluate("ap isnil ap ap cons x0 x1", "f");
         }
 
-        private void TestEvaluate(string fn, string reference)
+        [TestMethod]
+        public void TestPower2()
         {
-            var actual = Program.Evaluate(Program.Parse(fn));
+            var symbols = new Dictionary<string, LispNode>()
+            {
+                { "pwr2", Program.Parse("ap ap s ap ap c ap eq 0 1 ap ap b ap mul 2 ap ap b pwr2 ap add -1") }
+            };
+
+            TestEvaluate("ap pwr2 8", "256", symbols);
+        }
+
+        private void TestEvaluate(string fn, string reference, Dictionary<string, LispNode> symbols = null)
+        {
+            var actual = Program.Evaluate(Program.Parse(fn), symbols ?? new Dictionary<string, LispNode>());
             var expected = Program.Parse(reference);
             Assert.IsNotNull(Program.Match(expected, actual), $"fn [{fn}] expected [{expected}] actual [{actual}]");
         }
