@@ -24,11 +24,21 @@ namespace IcfpUtils
             Text = s;
         }
 
+        public LispNode(long number) : this(number.ToString()) { }
+
         public LispNode()
         {
             Type = LispNodeType.Open;
         }
 
+        public LispNode(LispNode lhs, LispNode rhs)
+        {
+            Type = LispNodeType.Open;
+            this.Children.Add(lhs);
+            this.Children.Add(rhs);
+        }
+
+        public LispNode Evaluated { get; set; }
         public LispNodeType Type { get; set; }
         public string Text { get; set; }
         public List<LispNode> Children { get; } = new List<LispNode>();

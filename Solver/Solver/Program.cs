@@ -91,32 +91,34 @@ namespace Solver
             bool substitutions = false,
             bool debug = false)
         {
-            var modifiedAnything = true;
-
-            while (modifiedAnything)
-            {
-                if (debug)
-                {
-                    //Console.WriteLine("--------");
-                    //Console.WriteLine(root);
-                    //Console.WriteLine("--------");
-
-                    Console.Write(".");
-                }
-
-                modifiedAnything = false;
-                foreach (var patternFunc in evalList)
-                {
-                    if (EvaluateOne(root, patternFunc, symbols))
-                    {
-                        modifiedAnything = true;
-                        break;
-                    }
-                }
-            }
-
-            return root;
+            return Program2.Evaluate(root, symbols);
         }
+
+            //var modifiedAnything = true;
+
+            //while (modifiedAnything)
+            //{
+            //    if (debug)
+            //    {
+            //        //Console.WriteLine("--------");
+            //        //Console.WriteLine(root);
+            //        //Console.WriteLine("--------");
+
+            //        Console.Write(".");
+            //    }
+
+            //    modifiedAnything = false;
+            //    foreach (var patternFunc in evalList)
+            //    {
+            //        if (EvaluateOne(root, patternFunc, symbols))
+            //        {
+            //            modifiedAnything = true;
+            //            break;
+            //        }
+            //    }
+            //}
+
+            //return root;
 
         public static LispNode Parse(string s)
         {
