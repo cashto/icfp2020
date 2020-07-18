@@ -17,48 +17,10 @@ namespace Solver
 {
     public class Program
     {
-        static async Task<int> Main(string[] args)
+        static void Main(string[] args)
         {
-            var serverUrl = args[0];
-            var playerKey = args[1];
-            Console.WriteLine($"ServerUrl: {serverUrl}; PlayerKey: {playerKey}");
+            TestPower2();
 
-            if (!Uri.TryCreate(serverUrl, UriKind.Absolute, out var serverUri))
-            {
-                Console.WriteLine("Failed to parse ServerUrl");
-                return 1;
-            }
-
-            using var httpClient = new HttpClient { BaseAddress = serverUri };
-            var requestContent = new StringContent(playerKey, Encoding.UTF8, MediaTypeNames.Text.Plain);
-            using var response = await httpClient.PostAsync("", requestContent);
-            if (!response.IsSuccessStatusCode)
-            {
-                Console.WriteLine($"Unexpected server response: {response}");
-                return 2;
-            }
-
-            var responseString = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"Server response: {responseString}");
-
-            return 0;
-        }
-
-        static void DeadCode2()
-        { 
-            var httpClient = new HttpClient();
-            var result = httpClient.SendAsync(
-                new HttpRequestMessage(
-                    HttpMethod.Post,
-                    "https://icfpc2020-api.testkontur.ru/aliens/send?apiKey=f6bc77050a4b4d2995b3f51b50155cdd")
-                {
-                    Content = new StringContent("1101000")
-                }).Result;
-            Console.WriteLine(Demodulate(result.Content.ReadAsStringAsync().Result).Item1);
-        }
-
-        static void DeadCode()
-        { 
             var symbols = new Dictionary<string, LispNode>();
 
             var lines = File.ReadLines(@"C:\Users\cashto\Documents\GitHub\icfp2020\work\galaxy.txt");
@@ -72,8 +34,50 @@ namespace Solver
             }
 
             var state = Parse("nil");
-            var vector = Parse("ap ap cons 12340001 12340002");
+            var vector = Parse("ap ap cons 0 0");
             var protocolResult = Interact(symbols["galaxy"], state, vector, symbols);
+        }
+
+        public static string Serialize(LispNode node)
+        {
+            if (node.Type == LispNodeType.Token)
+            {
+                return node.Text + " ";
+            }
+            else
+            {
+                return "ap " + Serialize(node.Children.First()) + Serialize(node.Children.Last());
+            }
+        }
+
+        public static void TestPower2()
+        {
+            var symbols = new Dictionary<string, LispNode>()
+            {
+                { "pwr2", Program.Parse("ap ap s ap ap c ap eq 0 1 ap ap b ap mul 2 ap ap b pwr2 ap add -1") }
+            };
+
+            TestEvaluate("ap pwr2 3", "8", symbols);
+        }
+
+        private static void TestEvaluate(string fn, string reference, Dictionary<string, LispNode> symbols = null)
+        {
+            var actual = Program.Evaluate(Program.Parse(fn), symbols ?? new Dictionary<string, LispNode>());
+            var expected = Program.Parse(reference);
+        }
+
+
+        static void DeadCode2(string apiKey)
+        { 
+            var httpClient = new HttpClient();
+            var result = httpClient.SendAsync(
+                new HttpRequestMessage(
+                    HttpMethod.Post,
+                    $"https://icfpc2020-api.testkontur.ru/aliens/send?apiKey={apiKey}")
+                {
+                    Content = new StringContent("1101000")
+                }).Result;
+            Console.WriteLine(Demodulate(result.Content.ReadAsStringAsync().Result).Item1);
         }
 
         static LispNode Interact(
@@ -108,16 +112,39 @@ namespace Solver
 
                 if (newRoot == null)
                 {
-                    newRoot = DoSubstitutions(root, symbols);
-                    if (object.ReferenceEquals(root, newRoot))
-                    {
+                    //if (debug)
+                    //{
+                    //    newRoot = DoSubstitutions(root, symbols);  // DEREF
+                    //}
+
+                    //if (newRoot == null || object.ReferenceEquals(root, newRoot))
+                    //{
                         return root;
-                    }
+                    //}
                 }
 
                 root = newRoot;
             }
         }
+
+        //public static LispNode EvaluateLeft(
+        //    LispNode root,
+        //    Dictionary<string, LispNode> symbols)
+        //{
+        //    while (true)
+        //    {
+        //        var newRoot = EvaluateOne(root, symbols);
+        //        if (!object.ReferenceEquals(newRoot, root))
+        //        {
+        //            return newRoot;
+        //        }
+
+        //        if (root.Type == LispNodeType.Token)
+        //        {
+        //            return oldRoot;
+        //        }
+        //    }
+        //}
 
         public static LispNode Parse(string s)
         {
@@ -161,7 +188,7 @@ namespace Solver
             {
                 if (symbols.ContainsKey(root.Text))
                 {
-                    return symbols[root.Text];
+                    return symbols[root.Text]; // DEREF
                 }
                 else
                 {
@@ -309,8 +336,8 @@ namespace Solver
             var newRoot = new LispNode() { Type = LispNodeType.Open };
             newRoot.Children.Add(new LispNode() { Type = LispNodeType.Open });
             newRoot.Children.Add(new LispNode() { Type = LispNodeType.Open });
-            //var args2 = Evaluate(args["x2"], symbols);
-            var args2 = args["x2"];
+            var args2 = Evaluate(args["x2"], symbols);
+            //var args2 = args["x2"];
             newRoot.Children.First().Children.Add(args["x0"]);
             newRoot.Children.First().Children.Add(args2);
             newRoot.Children.Last().Children.Add(args["x1"]);
@@ -409,18 +436,18 @@ namespace Solver
                 return ans;
             }
 
-            if (arg1.Type == LispNodeType.Token && arg1.Text.StartsWith(':'))
-            {
-                return null;
-            }
+            //if (arg1.Type == LispNodeType.Token && arg1.Text.StartsWith(':'))
+            //{
+            //    return null;
+            //}
 
-            ans.Children.Add(Evaluate(arg1, symbols));
-            if (object.ReferenceEquals(ans.Children.Last(), arg1))
-            {
-                return null;
-            }
+            //ans.Children.Add(Evaluate(arg1, symbols));
+            //if (object.ReferenceEquals(ans.Children.Last(), arg1))
+            //{
+            //    return null;
+            //}
 
-            return ans;
+            return null;
         }
 
         static LispNode DereferencePatternFunc(
@@ -438,7 +465,7 @@ namespace Solver
                 return null;
             }
 
-            return symbols[arg0.Text];
+            return symbols[arg0.Text]; // DEREF
         }
 
         static LispNode ConsPatternFunc(
@@ -509,7 +536,7 @@ namespace Solver
                 new PatternFunc("ap nil x0", NotImplementedPatternFunc),
 
                 new PatternFunc("ap x0 x1", ApPatternFunc),
-                //new PatternFunc("x0", DereferencePatternFunc),
+                new PatternFunc("x0", DereferencePatternFunc),
             };
 
         static LispNode EvaluateOne(
@@ -540,6 +567,22 @@ namespace Solver
             }
 
             return null;
+        }
+
+        private static Dictionary<string, LispNode> LeftMatch(
+            LispNode root,
+            LispNode pattern)
+        {
+            if (root.Type == LispNodeType.Open)
+            {
+                var ans = LeftMatch(root.Children.First(), pattern);
+                if (ans != null)
+                {
+                    return ans;
+                }
+            }
+
+            return Match(root, pattern);
         }
 
         public static Dictionary<string, LispNode> Match(
