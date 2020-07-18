@@ -7,6 +7,8 @@ using IcfpUtils;
 using System.Reflection.Metadata.Ecma335;
 using System.Data;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Net.WebSockets;
 
 namespace Solver
 {
@@ -27,7 +29,7 @@ namespace Solver
             }
 
             var state = Parse("nil");
-            var vector = Parse("ap ap cons 0 0");
+            var vector = Parse("ap ap cons 12340001 12340002");
             var protocolResult = Interact(symbols["galaxy"], state, vector, symbols);
         }
 
@@ -63,7 +65,11 @@ namespace Solver
 
                 if (newRoot == null)
                 {
-                    return root;
+                    newRoot = DoSubstitutions(root, symbols);
+                    if (object.ReferenceEquals(root, newRoot))
+                    {
+                        return root;
+                    }
                 }
 
                 root = newRoot;
@@ -101,7 +107,6 @@ namespace Solver
             throw new Exception($"Could not parse: {s}");
         }
 
-        /*
         static LispNode DoSubstitutions(LispNode root, Dictionary<string, LispNode> symbols)
         {
             if (symbols == null)
@@ -111,7 +116,7 @@ namespace Solver
 
             if (root.Type == LispNodeType.Token)
             {
-                if (root.Text.StartsWith(':'))
+                if (symbols.ContainsKey(root.Text))
                 {
                     return symbols[root.Text];
                 }
@@ -122,13 +127,18 @@ namespace Solver
             }
             else
             {
+                var leftTree = DoSubstitutions(root.Children.First(), symbols);
+                if (object.ReferenceEquals(leftTree, root.Children.First()))
+                {
+                    return root;
+                }
+
                 var ans = new LispNode() { Type = LispNodeType.Open };
-                ans.Children.Add(DoSubstitutions(root.Children.First(), symbols));
-                ans.Children.Add(DoSubstitutions(root.Children.Last(), symbols));
+                ans.Children.Add(leftTree);
+                ans.Children.Add(root.Children.Last());
                 return ans;
             }
         }
-        */
 
         static long? TryParseInt(LispNode node)
         {
@@ -256,13 +266,13 @@ namespace Solver
             var newRoot = new LispNode() { Type = LispNodeType.Open };
             newRoot.Children.Add(new LispNode() { Type = LispNodeType.Open });
             newRoot.Children.Add(new LispNode() { Type = LispNodeType.Open });
-            var args2 = Evaluate(args["x2"], symbols);
-            //var args2 = args["x2"];
+            //var args2 = Evaluate(args["x2"], symbols);
+            var args2 = args["x2"];
             newRoot.Children.First().Children.Add(args["x0"]);
             newRoot.Children.First().Children.Add(args2);
             newRoot.Children.Last().Children.Add(args["x1"]);
             newRoot.Children.Last().Children.Add(args2);
-            return newRoot;
+            return newRoot; 
         }
 
         static LispNode CPatternFunc(
@@ -456,7 +466,7 @@ namespace Solver
                 new PatternFunc("ap nil x0", NotImplementedPatternFunc),
 
                 new PatternFunc("ap x0 x1", ApPatternFunc),
-                new PatternFunc("x0", DereferencePatternFunc),
+                //new PatternFunc("x0", DereferencePatternFunc),
             };
 
         static LispNode EvaluateOne(
@@ -471,12 +481,15 @@ namespace Solver
                     var ret = patternFunc.Func(matches, symbols);
                     if (ret != null)
                     {
-                        Console.WriteLine(patternFunc.Func.Method.Name);
-                        foreach (var item in matches)
+                        if (false)
                         {
-                            Console.WriteLine($"   {item.Key}: {item.Value}");
+                            Console.WriteLine(patternFunc.Func.Method.Name);
+                            foreach (var item in matches)
+                            {
+                                Console.WriteLine($"   {item.Key}: {item.Value}");
+                            }
+                            Console.WriteLine($"   -> {ret}");
                         }
-                        Console.WriteLine($"   -> {ret}");
 
                         return ret;
                     }
@@ -572,7 +585,7 @@ namespace Solver
             return sb.ToString();
         }
 
-        public static Tuple<long, string> Demodulate(string data)
+        public static Tuple<long, string> DemodulateInt(string data)
         {
             var isNeg = data.StartsWith("10");
             var width = data.Skip(2).TakeWhile(i => i == '1').Count();
@@ -582,9 +595,51 @@ namespace Solver
             return Tuple.Create(isNeg ? -ans : ans, remainder);
         }
 
-        static string Modulate(List<int> data)
+
+        public static string Modulate(LispNode data)
         {
-            return "";
+            if (data.Type == LispNodeType.Token)
+            {
+                if (data.Text == "nil")
+                {
+                    return "00";
+                }
+                else
+                {
+                    return Modulate(long.Parse(data.Text));
+                }
+            }
+            else
+            {
+                return "11" + Modulate(data.Children.First().Children.Last()) + Modulate(data.Children.Last());
+            }
+        }
+
+        public static Tuple<LispNode, string> Demodulate(string s)
+        {
+            if (s.StartsWith("00"))
+            {
+                return Tuple.Create(
+                    new LispNode() { Type = LispNodeType.Token, Text = "nil" },
+                    s.Substring(2));
+            }
+            else if (s.StartsWith("11"))
+            {
+                var first = Demodulate(s.Substring(2));
+                var second = Demodulate(first.Item2);
+                var ans = new LispNode() { Type = LispNodeType.Open };
+                ans.Children.Add(new LispNode() { Type = LispNodeType.Open });
+                ans.Children.First().Children.Add(new LispNode() { Type = LispNodeType.Token, Text = "cons" });
+                ans.Children.First().Children.Add(first.Item1);
+                ans.Children.Add(second.Item1);
+                return Tuple.Create(ans, second.Item2);
+            }
+            else
+            {
+                var value = DemodulateInt(s);
+                var ans = new LispNode() { Type = LispNodeType.Token, Text = value.Item1.ToString() };
+                return Tuple.Create(ans, value.Item2);
+            }
         }
     }
 }

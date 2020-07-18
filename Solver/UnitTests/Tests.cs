@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Solver;
 using System.Runtime.InteropServices;
+using System.ComponentModel.DataAnnotations;
+using System;
 
 namespace UnitTests
 {
@@ -17,6 +19,14 @@ namespace UnitTests
             Assert.AreEqual("10100001", Program.Modulate(-1));
             Assert.AreEqual("01101111", Program.Modulate(15));
             Assert.AreEqual("0111000010000", Program.Modulate(16));
+            Assert.AreEqual("1101100001110110001000", Program.Modulate(Program.Parse("ap ap cons 1 ap ap cons 2 nil")));
+            Assert.AreEqual(
+                "1101100001111101100010110110001100110110010000",
+                Program.Modulate(Program.Parse("ap ap cons 1 ap ap cons ap ap cons 2 ap ap cons 3 nil ap ap cons 4 nil")));
+
+            Console.WriteLine(Program.Modulate(Program.Parse("ap ap cons 0 nil")));
+            Console.WriteLine(Program.Demodulate("110110000111011111100001000001011010010100").Item1);
+            Console.WriteLine(Program.Demodulate("110110000111011111100001000001011100010100").Item1);
         }
 
         [TestMethod]
