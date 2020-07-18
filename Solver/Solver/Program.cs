@@ -9,6 +9,7 @@ using System.Data;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Net.WebSockets;
+using System.Net.Http;
 
 namespace Solver
 {
@@ -16,6 +17,19 @@ namespace Solver
     {
         static void Main(string[] args)
         {
+            var httpClient = new HttpClient();
+            var result = httpClient.SendAsync(
+                new HttpRequestMessage(
+                    HttpMethod.Post,
+                    "https://icfpc2020-api.testkontur.ru/aliens/send?apiKey=f6bc77050a4b4d2995b3f51b50155cdd")
+                {
+                    Content = new StringContent("1101000")
+                }).Result;
+            Console.WriteLine(Demodulate(result.Content.ReadAsStringAsync().Result).Item1);
+        }
+
+        static void DeadCode()
+        { 
             var symbols = new Dictionary<string, LispNode>();
 
             var lines = File.ReadLines(@"C:\Users\cashto\Documents\GitHub\icfp2020\work\galaxy.txt");
