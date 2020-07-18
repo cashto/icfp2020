@@ -46,11 +46,6 @@ namespace Solver
             Console.WriteLine(protocolResult);
         }
 
-        public static MemoryStream GetStream(string value)
-        {
-            return new MemoryStream(Encoding.UTF8.GetBytes(value));
-        }
-
         public static string Serialize(LispNode node)
         {
             if (node.Type == LispNodeType.Token)
@@ -82,8 +77,8 @@ namespace Solver
             LispNode vector,
             Dictionary<string, LispNode> symbols)
         {
-            var protocolResultRoot = new LispNode() { Type = LispNodeType.Open };
-            protocolResultRoot.Children.Add(new LispNode() { Type = LispNodeType.Open });
+            var protocolResultRoot = new LispNode();
+            protocolResultRoot.Children.Add(new LispNode());
             protocolResultRoot.Children.First().Children.Add(protocol);
             protocolResultRoot.Children.First().Children.Add(state);
             protocolResultRoot.Children.Add(vector);
@@ -96,53 +91,32 @@ namespace Solver
             bool substitutions = false,
             bool debug = false)
         {
-            while (true)
+            var modifiedAnything = true;
+
+            while (modifiedAnything)
             {
                 if (debug)
                 {
-                    Console.WriteLine("--------");
-                    Console.WriteLine(root);
-                    Console.WriteLine("--------");
+                    //Console.WriteLine("--------");
+                    //Console.WriteLine(root);
+                    //Console.WriteLine("--------");
+
+                    Console.Write(".");
                 }
 
-                var newRoot = EvaluateOne(root, symbols);
-
-                if (newRoot == null)
+                modifiedAnything = false;
+                foreach (var patternFunc in evalList)
                 {
-                    if (substitutions)
+                    if (EvaluateOne(root, patternFunc, symbols))
                     {
-                        Console.WriteLine("DoSubstitution");
-                        newRoot = DoSubstitution(root, symbols);
-                    }
-                    
-                    if (newRoot == null || object.ReferenceEquals(root, newRoot))
-                    {
-                        return root;
+                        modifiedAnything = true;
+                        break;
                     }
                 }
-
-                root = newRoot;
             }
+
+            return root;
         }
-
-        //public static LispNode EvaluateLeft(
-        //    LispNode root,
-        //    Dictionary<string, LispNode> symbols)
-        //{
-        //    while (true)
-        //    {
-        //        var newRoot = EvaluateOne(root, symbols);
-        //        if (!object.ReferenceEquals(newRoot, root))
-        //        {
-        //            return newRoot;
-        //        }
-
-        //        if (root.Type == LispNodeType.Token)
-        //        {
-        //            return oldRoot;
-        //        }
-        //    }
-        //}
 
         public static LispNode Parse(string s)
         {
@@ -151,11 +125,11 @@ namespace Solver
             {
                 if (token == "ap")
                 {
-                    stack.Add(new LispNode() { Type = LispNodeType.Open });
+                    stack.Add(new LispNode());
                 }
                 else
                 {
-                    stack.Add(new LispNode() { Type = LispNodeType.Token, Text = token });
+                    stack.Add(new LispNode(token));
 
                     do
                     {
@@ -173,42 +147,6 @@ namespace Solver
             }
 
             throw new Exception($"Could not parse: {s}");
-        }
-
-        static LispNode DoSubstitution(LispNode root, Dictionary<string, LispNode> symbols)
-        {
-            if (symbols == null)
-            {
-                return root;
-            }
-
-            if (root.Type == LispNodeType.Token)
-            {
-                if (symbols.ContainsKey(root.Text))
-                {
-                    return symbols[root.Text]; // DEREF
-                }
-                else
-                {
-                    return root;
-                }
-            }
-            else
-            {
-                var leftTree = DoSubstitution(root.Children.First(), symbols);
-                var rightTree = DoSubstitution(root.Children.Last(), symbols);
-                
-                if (object.ReferenceEquals(leftTree, root.Children.First()) &&
-                    object.ReferenceEquals(rightTree, root.Children.Last()))
-                {
-                    return root;
-                }
-
-                var ans = new LispNode() { Type = LispNodeType.Open };
-                ans.Children.Add(leftTree);
-                ans.Children.Add(rightTree);
-                return ans;
-            }
         }
 
         static long? TryParseInt(LispNode node)
@@ -234,43 +172,18 @@ namespace Solver
             Func<long, long, string> fn)
         {
             var arity = args.Count;
-            var arg1Tree = Evaluate(args["x0"], symbols);
-            var arg2Tree = arity < 2 ? null : Evaluate(args["x1"], symbols);
+            var arg1Tree = args["x0"];
+            var arg2Tree = arity < 2 ? null : args["x1"];
 
             long? arg1 = TryParseInt(arg1Tree);
             long? arg2 = arg2Tree == null ? 0 : TryParseInt(arg2Tree);
 
             if (arg1.HasValue && arg2.HasValue)
             {
-                return new LispNode()
-                {
-                    Type = LispNodeType.Token,
-                    Text = fn(arg1.Value, arg2.Value)
-                };
+                return new LispNode(fn(arg1.Value, arg2.Value));
             }
 
             return null;
-/*
-            var ans = new LispNode() { Type = LispNodeType.Open };
-            ans.Children.Add(new LispNode() { Type = LispNodeType.Token, Text = funcName });
-            ans.Children.Add(arg1Tree);
-
-            if (arg2Tree != null)
-            {
-                var child = ans;
-                ans = new LispNode() { Type = LispNodeType.Open };
-                ans.Children.Add(child);
-                ans.Children.Add(arg2Tree);
-            }
-
-            if (object.ReferenceEquals(arg1Tree, args["x0"]) &&
-                (arity == 1 || object.ReferenceEquals(arg2Tree, args["x1"])))
-            {
-                return null;
-            }
-
-            return ans;
-*/
         }
 
         static LispNode IncPatternFunc(
@@ -319,16 +232,11 @@ namespace Solver
             Dictionary<string, LispNode> args,
             Dictionary<string, LispNode> symbols)
         {
-            //if (args["x0"].Type == LispNodeType.Token &&
-            //    args["x1"].Type == LispNodeType.Token &&
-            //    args["x0"].Text == args["x1"].Text)
-            //{
-            //    return new LispNode() { Type = LispNodeType.Token, Text = "t" };
-            //}
-            
-            if (Match(args["x0"], args["x1"]) != null)
+            if (object.ReferenceEquals(
+                Dereference(args["x0"], symbols) ?? args["x0"],
+                Dereference(args["x1"],symbols) ?? args["x1"]))
             {
-                return new LispNode() { Type = LispNodeType.Token, Text = "t" };
+                return new LispNode("t");
             }
 
             return NumericFunc(args, symbols, "eq", (a, b) => a == b ? "t" : "f");
@@ -346,15 +254,13 @@ namespace Solver
             Dictionary<string, LispNode> symbols)
         {
             // S : ap ap ap s x0 x1 x2   =   ap ap x0 x2 ap x1 x2
-            var newRoot = new LispNode() { Type = LispNodeType.Open };
-            newRoot.Children.Add(new LispNode() { Type = LispNodeType.Open });
-            newRoot.Children.Add(new LispNode() { Type = LispNodeType.Open });
-            var args2 = Evaluate(args["x2"], symbols);
-            //var args2 = args["x2"];
+            var newRoot = new LispNode();
+            newRoot.Children.Add(new LispNode());
+            newRoot.Children.Add(new LispNode());
             newRoot.Children.First().Children.Add(args["x0"]);
-            newRoot.Children.First().Children.Add(args2);
+            newRoot.Children.First().Children.Add(args["x2"]);
             newRoot.Children.Last().Children.Add(args["x1"]);
-            newRoot.Children.Last().Children.Add(args2);
+            newRoot.Children.Last().Children.Add(args["x2"]);
             return newRoot; 
         }
 
@@ -363,8 +269,8 @@ namespace Solver
             Dictionary<string, LispNode> symbols)
         {
             // C : ap ap ap c x0 x1 x2   =   ap ap x0 x2 x1
-            var newRoot = new LispNode() { Type = LispNodeType.Open };
-            newRoot.Children.Add(new LispNode() { Type = LispNodeType.Open });
+            var newRoot = new LispNode();
+            newRoot.Children.Add(new LispNode());
             newRoot.Children.First().Children.Add(args["x0"]);
             newRoot.Children.First().Children.Add(args["x2"]);
             newRoot.Children.Add(args["x1"]);
@@ -376,9 +282,9 @@ namespace Solver
             Dictionary<string, LispNode> symbols)
         {
             // B : ap ap ap b x0 x1 x2   =   ap x0 ap x1 x2
-            var newRoot = new LispNode() { Type = LispNodeType.Open };
+            var newRoot = new LispNode();
             newRoot.Children.Add(args["x0"]);
-            newRoot.Children.Add(new LispNode() { Type = LispNodeType.Open });
+            newRoot.Children.Add(new LispNode());
             newRoot.Children.Last().Children.Add(args["x1"]);
             newRoot.Children.Last().Children.Add(args["x2"]);
             return newRoot;
@@ -400,7 +306,7 @@ namespace Solver
             return args["x1"];
         }
 
-        static LispNode IPatternFunc(
+        static LispNode X0PatternFunc(
             Dictionary<string, LispNode> args,
             Dictionary<string, LispNode> symbols)
         {
@@ -419,9 +325,9 @@ namespace Solver
             Dictionary<string, LispNode> args,
             Dictionary<string, LispNode> symbols)
         {
-            var ans = new LispNode() { Type = LispNodeType.Open };
+            var ans = new LispNode();
             ans.Children.Add(args["x0"]);
-            ans.Children.Add(new LispNode() { Type = LispNodeType.Token, Text = "t" });
+            ans.Children.Add(new LispNode("t"));
             return ans;
         }
 
@@ -429,9 +335,9 @@ namespace Solver
             Dictionary<string, LispNode> args,
             Dictionary<string, LispNode> symbols)
         {
-            var ans = new LispNode() { Type = LispNodeType.Open };
+            var ans = new LispNode();
             ans.Children.Add(args["x0"]);
-            ans.Children.Add(new LispNode() { Type = LispNodeType.Token, Text = "f" });
+            ans.Children.Add(new LispNode("f"));
             return ans;
         }
 
@@ -446,112 +352,53 @@ namespace Solver
             Dictionary<string, LispNode> args,
             Dictionary<string, LispNode> symbols)
         {
-            return new LispNode() { Type = LispNodeType.Token, Text = "0" };
+            return new LispNode("0");
         }
 
-        static LispNode IsNilPatternFunc(
-            Dictionary<string, LispNode> args,
+        static LispNode Dereference(
+            LispNode arg,
             Dictionary<string, LispNode> symbols)
         {
-            var arg0 = Evaluate(args["x0"], symbols);
-            return new LispNode()
+            if (arg.Type != LispNodeType.Token)
             {
-                Type = LispNodeType.Token,
-                Text = arg0.Type == LispNodeType.Token && arg0.Text == "nil" ? "t" : "f"
-            };
-        }
-
-        static LispNode ApPatternFunc(
-            Dictionary<string, LispNode> args,
-            Dictionary<string, LispNode> symbols)
-        {
-            var ans = new LispNode() { Type = LispNodeType.Open };
-            var arg0 = args["x0"];
-            var arg1 = args["x1"];
-
-            ans.Children.Add(Evaluate(arg0, symbols));
-            ans.Children.Add(Evaluate(arg1, symbols));
-
-            if (!object.ReferenceEquals(ans.Children.Last(), arg1) ||
-                !object.ReferenceEquals(ans.Children.First(), arg0))
-            {
-                return ans;
+                return null;
             }
 
-            //if (arg1.Type == LispNodeType.Token && arg1.Text.StartsWith(':'))
-            //{
-            //    return null;
-            //}
-
-            //ans.Children.Add(Evaluate(arg1, symbols));
-            //if (object.ReferenceEquals(ans.Children.Last(), arg1))
-            //{
-            //    return null;
-            //}
-
-            return null;
-        }
-
-        static LispNode RightApPatternFunc(
-            Dictionary<string, LispNode> args,
-            Dictionary<string, LispNode> symbols)
-        {
-            var ans = new LispNode() { Type = LispNodeType.Open };
-            var arg0 = args["x0"];
-            var arg1 = args["x1"];
-
-            ans.Children.Add(arg0);
-            ans.Children.Add(Evaluate(arg1, symbols));
-            if (!object.ReferenceEquals(ans.Children.Last(), arg1))
+            if (!symbols.ContainsKey(arg.Text))
             {
-                return ans;
+                return null;
             }
 
-            return null;
+            return symbols[arg.Text];
         }
 
         static LispNode DereferencePatternFunc(
             Dictionary<string, LispNode> args,
             Dictionary<string, LispNode> symbols)
         {
-            var arg0 = args["x0"];
-            if (arg0.Type != LispNodeType.Token)
+            var arg0 = Dereference(args["x0"], symbols);
+            var arg1 = Dereference(args["x1"], symbols);
+            if (arg0 == null && arg1 == null)
             {
                 return null;
             }
 
-            if (!symbols.ContainsKey(arg0.Text))
-            {
-                return null;
-            }
-
-            return symbols[arg0.Text]; // DEREF
+            var ans = new LispNode();
+            ans.Children.Add(arg0 ?? args["x0"]);
+            ans.Children.Add(arg1 ?? args["x1"]);
+            return ans;
         }
 
         static LispNode ConsPatternFunc(
             Dictionary<string, LispNode> args,
             Dictionary<string, LispNode> symbols)
         {
-            var root = new LispNode() { Type = LispNodeType.Open };
-            root.Children.Add(new LispNode() { Type = LispNodeType.Open });
+            var root = new LispNode();
+            root.Children.Add(new LispNode());
             root.Children.First().Children.Add(args["x2"]);
             root.Children.First().Children.Add(args["x0"]);
             root.Children.Add(args["x1"]);
             return root;
-        }
-
-        static LispNode NilPatternFunc(
-            Dictionary<string, LispNode> args,
-            Dictionary<string, LispNode> symbols)
-        {
-            return new LispNode() { Type = LispNodeType.Token, Text = "t" };
-        }
-
-        static LispNode ApSTPatternFunc(
-            Dictionary<string, LispNode> args,
-            Dictionary<string, LispNode> symbols)
-        {
-            return new LispNode() { Type = LispNodeType.Token, Text = "f" };
         }
 
         static LispNode NotImplementedPatternFunc(
@@ -565,8 +412,8 @@ namespace Solver
             Dictionary<string, LispNode> args,
             Dictionary<string, LispNode> symbols)
         {
-            var ans = new LispNode() { Type = LispNodeType.Open };
-            ans.Children.Add(new LispNode() { Type = LispNodeType.Token, Text = "inc" });
+            var ans = new LispNode();
+            ans.Children.Add(new LispNode("inc"));
             ans.Children.Add(args["x0"]);
             return ans;
         }
@@ -575,10 +422,15 @@ namespace Solver
             Dictionary<string, LispNode> args,
             Dictionary<string, LispNode> symbols)
         {
-            var ans = new LispNode() { Type = LispNodeType.Open };
-            ans.Children.Add(new LispNode() { Type = LispNodeType.Token, Text = "dec" });
+            var ans = new LispNode();
+            ans.Children.Add(new LispNode("dec"));
             ans.Children.Add(args["x0"]);
             return ans;
+        }
+
+        static Func<Dictionary<string, LispNode>, Dictionary<string, LispNode>, LispNode> ConstantPatternFunc(string constant)
+        {
+            return (args, symbols) => new LispNode(constant);
         }
 
         class PatternFunc
@@ -598,22 +450,22 @@ namespace Solver
         static List<PatternFunc> evalList =
             new List<PatternFunc>()
             {
-                new PatternFunc("ap ap add x0 0", IPatternFunc),
-                new PatternFunc("ap ap add 0 x0", IPatternFunc),
-                new PatternFunc("ap ap mul x0 1", IPatternFunc),
-                new PatternFunc("ap ap mul 1 x0", IPatternFunc),
-                new PatternFunc("ap ap mul x0 0", ZeroPatternFunc),
-                new PatternFunc("ap ap mul 0 x0", ZeroPatternFunc),
-                new PatternFunc("ap ap div x0 1", IPatternFunc),
-                new PatternFunc("ap inc ap dec x0", IPatternFunc),
-                new PatternFunc("ap dec ap inc x0", IPatternFunc),
+                new PatternFunc("ap ap add x0 0", X0PatternFunc),
+                new PatternFunc("ap ap add 0 x0", X0PatternFunc),
+                new PatternFunc("ap ap mul x0 1", X0PatternFunc),
+                new PatternFunc("ap ap mul 1 x0", X0PatternFunc),
+                new PatternFunc("ap ap mul x0 0", ConstantPatternFunc("0")),
+                new PatternFunc("ap ap mul 0 x0", ConstantPatternFunc("0")),
+                new PatternFunc("ap ap div x0 1", X0PatternFunc),
+                new PatternFunc("ap inc ap dec x0", X0PatternFunc),
+                new PatternFunc("ap dec ap inc x0", X0PatternFunc),
                 new PatternFunc("ap ap add x0 1", MakeIncPatternFunc),
                 new PatternFunc("ap ap add 1 x0", MakeIncPatternFunc),
                 new PatternFunc("ap ap add x0 -1", MakeDecPatternFunc),
                 new PatternFunc("ap ap add -1 x0", MakeDecPatternFunc),
-                new PatternFunc("ap ap neg neg x0", IPatternFunc),
+                new PatternFunc("ap ap neg neg x0", X0PatternFunc),
 
-                new PatternFunc("ap s t", ApSTPatternFunc),
+                new PatternFunc("ap s t", ConstantPatternFunc("f")),
                 new PatternFunc("ap inc x0", IncPatternFunc),
                 new PatternFunc("ap dec x0", DecPatternFunc),
                 new PatternFunc("ap ap add x0 x1", AddPatternFunc),
@@ -625,14 +477,15 @@ namespace Solver
                 new PatternFunc("ap ap ap s x0 x1 x2", SPatternFunc),
                 new PatternFunc("ap ap ap c x0 x1 x2", CPatternFunc),
                 new PatternFunc("ap ap ap b x0 x1 x2", BPatternFunc),
-                new PatternFunc("ap ap t x0 x1", TPatternFunc),
-                new PatternFunc("ap ap f x0 x1", FPatternFunc),
-                new PatternFunc("ap i x0", IPatternFunc),
+                new PatternFunc("ap ap t x0 x1", X0PatternFunc),
+                new PatternFunc("ap ap f x1 x0", X0PatternFunc),
+                new PatternFunc("ap i x0", X0PatternFunc),
                 //new PatternFunc("ap car ap ap cons x0 x1", CarPatternFunc),
                 //new PatternFunc("ap cdr ap ap cons x0 x1", CdrPatternFunc),
-                new PatternFunc("ap isnil x0", IsNilPatternFunc),
+                new PatternFunc("ap isnil nil", ConstantPatternFunc("t")),
+                new PatternFunc("ap isnil ap ap cons x0 x1", ConstantPatternFunc("f")),
                 new PatternFunc("ap ap ap cons x0 x1 x2", ConsPatternFunc),
-                new PatternFunc("ap nil x0", NilPatternFunc),
+                new PatternFunc("ap nil x0", ConstantPatternFunc("t")),
 
                 //new PatternFunc("ap car x0", NotImplementedPatternFunc),
                 //new PatternFunc("ap cdr x0", NotImplementedPatternFunc),
@@ -640,112 +493,93 @@ namespace Solver
                 new PatternFunc("ap car x0", CarNonConsPatternFunc),
                 new PatternFunc("ap cdr x0", CdrNonConsPatternFunc),
 
-                new PatternFunc("ap x0 x1", ApPatternFunc),
-                //new PatternFunc("ap x0 x1", RightApPatternFunc),
-                //new PatternFunc("x0", DereferencePatternFunc),
+                new PatternFunc("ap x0 x1", DereferencePatternFunc),
             };
 
-        static LispNode EvaluateOne(
+        static bool EvaluateOne(
             LispNode root,
+            PatternFunc patternFunc,
             Dictionary<string, LispNode> symbols)
         {
-            foreach (var patternFunc in evalList)
+            var match = Match(root, patternFunc, symbols);
+            if (match != null)
             {
-                var matches = Match(root, patternFunc.Pattern);
-                if (matches != null)
+                root.Type = match.Type;
+                root.Text = match.Text;
+                root.Children.Clear();
+                root.Children.AddRange(match.Children);
+                return true;
+            }
+            else if (root.Type == LispNodeType.Open)
+            {
+                return
+                    EvaluateOne(root.Children.First(), patternFunc, symbols) ||
+                    EvaluateOne(root.Children.Last(), patternFunc, symbols);
+            }
+
+            return false;
+        }
+
+        static LispNode Match(
+            LispNode root,
+            PatternFunc patternFunc,
+            Dictionary<string, LispNode> symbols)
+        {
+            var matches = Match(root, patternFunc.Pattern);
+            if (matches != null)
+            {
+                var ret = patternFunc.Func(matches, symbols);
+                if (ret != null)
                 {
-                    var ret = patternFunc.Func(matches, symbols);
-                    if (patternFunc.Func != ApPatternFunc)
-                    {
-                        ;
-                    }
-
-                    if (ret != null)
-                    {
-                        if (patternFunc.Func != ApPatternFunc)
-                        {
-                            Console.WriteLine("   " + patternFunc.Func.Method.Name);
-                            foreach (var item in matches)
-                            {
-                                //Console.WriteLine($"   {item.Key}: {item.Value}");
-                            }
-                            //Console.WriteLine($"   -> {ret}");
-                        }
-
-                        return ret;
-                    }
+                    return ret;
                 }
             }
 
             return null;
         }
 
-        private static Dictionary<string, LispNode> LeftMatch(
-            LispNode root,
-            LispNode pattern)
-        {
-            if (root.Type == LispNodeType.Open)
-            {
-                var ans = LeftMatch(root.Children.First(), pattern);
-                if (ans != null)
-                {
-                    return ans;
-                }
-            }
-
-            return Match(root, pattern);
-        }
-
         public static Dictionary<string, LispNode> Match(
             LispNode root,
             LispNode pattern)
         {
-            var ans = new Dictionary<string, LispNode>();
+            var ans = new List<Tuple<string, LispNode>>();
+            return Match(root, pattern, ans) ? ans.ToDictionary(i => i.Item1, i => i.Item2) : null;
+        }
 
+        public static bool Match(
+            LispNode root,
+            LispNode pattern,
+            List<Tuple<string, LispNode>> ans)
+        {
             if (pattern.Type == LispNodeType.Open)
             {
                 if (root.Type != LispNodeType.Open)
                 {
-                    return null;
+                    return false;
                 }
 
-                var left = Match(root.Children.First(), pattern.Children.First());
-                if (left == null)
+                var left = Match(root.Children.First(), pattern.Children.First(), ans);
+                if (!left)
                 {
-                    return null;
+                    return false;
                 }
 
-                var right = Match(root.Children.Last(), pattern.Children.Last());
-                if (right == null)
+                var right = Match(root.Children.Last(), pattern.Children.Last(), ans);
+                if (!right)
                 {
-                    return null;
+                    return false;
                 }
 
-                foreach (var item in left)
-                {
-                    ans[item.Key] = item.Value;
-                }
-
-                foreach (var item in right)
-                {
-                    ans[item.Key] = item.Value;
-                }
-
-                return ans;
+                return true;
             }
             else if (pattern.Text.StartsWith('x'))
             {
-                ans[pattern.Text] = root;
-                return ans;
+                ans.Add(Tuple.Create(pattern.Text, root));
+                return true;
             }
             else
             {
-                if (root.Text != pattern.Text)
-                {
-                    return null;
-                }
-
-                return ans;
+                return root.Text == pattern.Text;
             }
         }
 
@@ -817,16 +651,16 @@ namespace Solver
             if (s.StartsWith("00"))
             {
                 return Tuple.Create(
-                    new LispNode() { Type = LispNodeType.Token, Text = "nil" },
+                    new LispNode("nil"),
                     s.Substring(2));
             }
             else if (s.StartsWith("11"))
             {
                 var first = Demodulate(s.Substring(2));
                 var second = Demodulate(first.Item2);
-                var ans = new LispNode() { Type = LispNodeType.Open };
-                ans.Children.Add(new LispNode() { Type = LispNodeType.Open });
-                ans.Children.First().Children.Add(new LispNode() { Type = LispNodeType.Token, Text = "cons" });
+                var ans = new LispNode();
+                ans.Children.Add(new LispNode());
+                ans.Children.First().Children.Add(new LispNode("cons"));
                 ans.Children.First().Children.Add(first.Item1);
                 ans.Children.Add(second.Item1);
                 return Tuple.Create(ans, second.Item2);
@@ -834,9 +668,36 @@ namespace Solver
             else
             {
                 var value = DemodulateInt(s);
-                var ans = new LispNode() { Type = LispNodeType.Token, Text = value.Item1.ToString() };
+                var ans = new LispNode(value.Item1.ToString());
                 return Tuple.Create(ans, value.Item2);
             }
+        }
+
+        public static string TreeToList(LispNode tree)
+        {
+            if (tree.Type == LispNodeType.Token)
+            {
+                return tree.Text == "nil" ? "" : tree.Text;
+            }
+
+            StringBuilder sb = new StringBuilder();
+            sb.Append("[");
+            var first = true;
+
+            while (tree.Type == LispNodeType.Open)
+            {
+                if (!first)
+                {
+                    sb.Append(' ');
+                }
+
+                sb.Append(TreeToList(tree.Children.First().Children.Last()));
+                first = false;
+                tree = tree.Children.Last();
+            }
+            
+            sb.Append("]");
+            return sb.ToString();
         }
     }
 }

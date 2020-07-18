@@ -18,6 +18,17 @@ namespace IcfpUtils
 
     public class LispNode
     {
+        public LispNode(string s)
+        {
+            Type = LispNodeType.Token;
+            Text = s;
+        }
+
+        public LispNode()
+        {
+            Type = LispNodeType.Open;
+        }
+
         public LispNodeType Type { get; set; }
         public string Text { get; set; }
         public List<LispNode> Children { get; } = new List<LispNode>();
@@ -85,6 +96,19 @@ namespace IcfpUtils
 
     public static class Lisp
     {
+        static MemoryStream GetStream(string value)
+        {
+            return new MemoryStream(Encoding.UTF8.GetBytes(value));
+        }
+
+        public static LispNode Parse(string s)
+        {
+            using (var stream = GetStream(s))
+            {
+                return Parse(stream);
+            }
+        }
+
         public static LispNode Parse(Stream stream)
         {
             var stack = new Stack<LispNode>();
