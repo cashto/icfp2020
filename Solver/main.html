@@ -1,0 +1,110 @@
+<html>
+
+<head>
+
+<script>
+var zoom = 3;
+var initialState = [["cons", "0"], [["cons", [["cons", "0"], [["cons", [["cons", "0"], "nil"]], [["cons", "0"], [["cons", "nil"], "nil"]]]]], [["cons", [["cons", [["cons", [["cons", "-1"], "-3"]], [["cons", [["cons", "0"], "-3"]], [["cons", [["cons", "1"], "-3"]], [["cons", [["cons", "2"], "-2"]], [["cons", [["cons", "-2"], "-1"]], [["cons", [["cons", "-1"], "-1"]], [["cons", [["cons", "0"], "-1"]], [["cons", [["cons", "3"], "-1"]], [["cons", [["cons", "-3"], "0"]], [["cons", [["cons", "-1"], "0"]], [["cons", [["cons", "1"], "0"]], [["cons", [["cons", "3"], "0"]], [["cons", [["cons", "-3"], "1"]], [["cons", [["cons", "0"], "1"]], [["cons", [["cons", "1"], "1"]], [["cons", [["cons", "2"], "1"]], [["cons", [["cons", "-2"], "2"]], [["cons", [["cons", "-1"], "3"]], [["cons", [["cons", "0"], "3"]], [["cons", [["cons", "1"], "3"]], "nil"]]]]]]]]]]]]]]]]]]]]], [["cons", [["cons", [["cons", "-7"], "-3"]], [["cons", [["cons", "-8"], "-2"]], "nil"]]], [["cons", "nil"], "nil"]]]], "nil"]]];
+
+function cdr(x) {
+	return x[0][1];
+}
+
+function car(x) {
+	return x[1];
+}
+
+function onRequestComplete () {
+	paint(JSON.parse(this.responseText));
+}
+
+function paint(response) {
+	var oStatus = document.getElementById("idStatus");
+	var oState = document.getElementById("idState");
+	var oFlag = document.getElementById("idFlag");
+	var oDebug = document.getElementById("idDebug");
+	var oCanvas = document.getElementById("idCanvas");
+	var canvasContext = oCanvas.getContext("2d");
+	var colors = ['#999999', '#ffffff', '#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+	
+	oStatus.innerHTML = 'Ready';
+	oFlag.innerHTML = cdr(response);
+	oState.value = JSON.stringify(cdr(car(response)));
+	oDebug.innerHTML = "";
+	
+	var multiDraw = cdr(car(car(response)));
+	var screens = listToArray(multiDraw);
+	
+	canvasContext.globalAlpha = 1.0;
+	canvasContext.fillStyle = '#000000';
+	canvasContext.fillRect(0, 0, oCanvas.width, oCanvas.height);
+	canvasContext.globalAlpha = 0.5;
+	
+	oDebug.innerHTML = "Screens: " + screens.length;
+	for (var i = 0; i < screens.length; ++i)
+	{
+		//oDebug.innerHTML += "<p>";
+		canvasContext.fillStyle = colors[i];
+		var points = listToArray(screens[i]);
+		for (var j = 0; j < points.length; ++j)
+		{
+			var x = parseInt(cdr(points[j]));
+			var y = parseInt(car(points[j]));
+			//oDebug.innerHTML += "(" + x + ", " + y + "); ";
+			var scaledx = (oCanvas.width / 2 + x * zoom);
+			var scaledy = (oCanvas.height / 2 + y * zoom);
+			canvasContext.fillRect(scaledx, scaledy, zoom, zoom);
+		}
+	}
+}
+
+function listToArray(list)
+{
+	var ans = [];
+	while (list != 'nil')
+	{
+		ans.push(cdr(list));
+		list = car(list);
+	}
+	
+	return ans;
+}
+
+function onClick()
+{
+	var oState = document.getElementById("idState");
+	var oCanvas = document.getElementById("idCanvas");
+	var canvasRect = oCanvas.getBoundingClientRect();
+	var x = Math.floor((event.x - canvasRect.left - oCanvas.width / 2) / zoom);
+	var y = Math.floor((event.y - canvasRect.top - oCanvas.height / 2) / zoom);
+	send(JSON.parse(oState.value), x, y);
+}
+
+function send(state, x, y)
+{
+	var status = document.getElementById("idStatus");
+	status.innerHTML = 'Processing';
+	
+	var oReq = new XMLHttpRequest();
+	oReq.addEventListener("load", onRequestComplete);
+	oReq.open("POST", "/api/galaxy");
+	oReq.setRequestHeader("Content-type", "application/json");
+	var body = { state: state, x: x, y: y};
+	oReq.send(JSON.stringify(body));
+}
+
+function onLoad()
+{
+	paint(initialState);
+}
+</script>
+</head>
+
+<body onload='onLoad()'>
+<canvas id=idCanvas width=1024 height=1024 style='border: solid 1px black; align: center' onclick='onClick()'></canvas>
+
+<p><b>Status:</b> <span id=idStatus></span>
+<p><b>Flag:</b> <span id=idFlag></span>
+<p><b>State:</b><br><textarea id=idState cols=120 rows=10></textarea>
+<p><b>Debug:</b> <span id=idDebug></span>
+</body>

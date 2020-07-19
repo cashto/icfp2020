@@ -154,7 +154,7 @@ namespace UnitTests
             var tree = Lisp.Parse("((cons 0) ((cons ((cons 0) ((cons ((cons 0) nil)) ((cons 0) ((cons nil) nil))))) ((cons ((cons ((cons ((cons -1) -3)) ((cons ((cons 0) -3)) ((cons ((cons 1) -3)) ((cons ((cons 2) -2)) ((cons ((cons -2) -1)) ((cons ((cons -1) -1)) ((cons ((cons 0) -1)) ((cons ((cons 3) -1)) ((cons ((cons -3) 0)) ((cons ((cons -1) 0)) ((cons ((cons 1) 0)) ((cons ((cons 3) 0)) ((cons ((cons -3) 1)) ((cons ((cons 0) 1)) ((cons ((cons 1) 1)) ((cons ((cons 2) 1)) ((cons ((cons -2) 2)) ((cons ((cons -1) 3)) ((cons ((cons 0) 3)) ((cons ((cons 1) 3)) nil))))))))))))))))))))) ((cons ((cons ((cons -7) -3)) ((cons ((cons -8) -2)) nil))) ((cons nil) nil)))) nil)))").Children.First();
             //var tree = Program.Parse("ap ap cons 42 nil");
             //var tree = Program.Parse("ap ap cons 42 ap ap cons ap ap cons 13 ap ap cons 101 nil nil");
-            Console.WriteLine(Program.TreeToList(tree));
+            Console.WriteLine(Program.TreeToJson(tree));
         }
 
         private void TestEvaluate(string fn, string reference, Dictionary<string, LispNode> symbols = null)

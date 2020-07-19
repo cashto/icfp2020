@@ -4,7 +4,6 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 using IcfpUtils;
-using System.Reflection.Metadata.Ecma335;
 using System.Data;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -17,35 +16,6 @@ namespace Solver
 {
     public class Program
     {
-        static void Main(string[] args)
-        {
-            var symbols = new Dictionary<string, LispNode>();
-
-            var lines = File.ReadLines(@"C:\Users\cashto\Documents\GitHub\icfp2020\work\galaxy.txt");
-            foreach (var line in lines)
-            {
-                var x = line.Split('=');
-                var symbol = x[0].Trim();
-                var value = Parse(x[1]);
-
-                symbols[symbol] = value;
-            }
-
-            //var errorLine = "((cons 0) ((cons ((cons 0) ((cons ((cons 0) nil)) ((cons 0) ((cons nil) nil))))) ((cons ((cons ((cons ((cons -1) -3)) ((cons ((cons 0) -3)) ((cons ((cons 1) -3)) ((cons ((cons 2) -2)) ((cons ((cons -2) -1)) ((cons ((cons -1) -1)) ((cons ((cons 0) -1)) ((cons ((cons 3) -1)) ((cons ((cons -3) 0)) ((cons ((cons -1) 0)) ((cons ((cons 1) 0)) ((cons ((cons 3) 0)) ((cons ((cons -3) 1)) ((cons ((cons 0) 1)) ((cons ((cons 1) 1)) ((cons ((cons 2) 1)) ((cons ((cons -2) 2)) ((cons ((cons -1) 3)) ((cons ((cons 0) 3)) ((cons ((cons 1) 3)) ((cons (((cons -3) -3) ((c ((b b) ((b :1162) (add ((c ((b b) ((b :1115) cdr))) ((c :1126) cdr)))))) (add 63)))) ((:1126 (((:1127 ((c ((b b) ((b :1115) ((s ((b :1162) ((c ((s ((b b) ((c ((b b) add)) neg))) ((b (s mul)) div))) 7))) ((c div) 7))))) ((c :1126) ((s ((b :1162) ((c ((s ((b b) ((c ((b b) add)) neg))) ((b (s mul)) div))) 7))) ((c div) 7))))) cons) 64)) ((c :1172) ((:1162 -3) -3))))))))))))))))))))))))) ((cons ((:1183 ((:1183 (:1214 ((((:1204 ((:1162 0) 0)) ((((:1166 -3) -3) 7) 7)) 0) -1))) ((:1162 -5) 0))) ((:1162 -3) -3))) ((cons ((:1183 (:1230 ((((:1204 ((:1162 0) 0)) ((((:1166 -3) -3) 7) 7)) 0) -1))) ((:1162 -3) -3))) nil)))) nil)))";
-            //var errorLine ="((cons 0) ((cons ((cons 0) ((cons ((cons 0) nil)) ((cons 0) ((cons nil) nil))))) ((cons ((cons ((cons ((cons -1) -3)) ((cons ((cons 0) -3)) ((cons ((cons 1) -3)) ((cons ((cons 2) -2)) ((cons ((cons -2) -1)) ((cons ((cons -1) -1)) ((cons ((cons 0) -1)) ((cons ((cons 3) -1)) ((cons ((cons -3) 0)) ((cons ((cons -1) 0)) ((cons ((cons 1) 0)) ((cons ((cons 3) 0)) ((cons ((cons -3) 1)) ((cons ((cons 0) 1)) ((cons ((cons 1) 1)) ((cons ((cons 2) 1)) ((cons ((cons -2) 2)) ((cons ((cons -1) 3)) ((cons ((cons 0) 3)) ((cons ((cons 1) 3)) ((cons ((:1162 ((add ((c ((b b) ((b :1115) cdr))) ((c :1126) cdr))) -3)) 60)) ((:1126 (((:1127 ((c ((b b) ((b :1115) ((s ((b :1162) ((c ((s ((b b) ((c ((b b) add)) neg))) ((b (s mul)) div))) 7))) ((c div) 7))))) ((c :1126) ((s ((b :1162) ((c ((s ((b b) ((c ((b b) add)) neg))) ((b (s mul)) div))) 7))) ((c div) 7))))) cons) 64)) ((c :1172) ((:1162 -3) -3))))))))))))))))))))))))) ((cons ((:1183 ((:1183 (:1214 ((((:1204 ((:1162 0) 0)) ((((:1166 -3) -3) 7) 7)) 0) -1))) ((:1162 -5) 0))) ((:1162 -3) -3))) ((cons ((:1183 (:1230 ((((:1204 ((:1162 0) 0)) ((((:1166 -3) -3) 7) 7)) 0) -1))) ((:1162 -3) -3))) nil)))) nil)))";
-            //var errorLine = "((add ((c ((b b) ((b :1115) cdr))) ((c :1126) cdr))) -3)";
-            //var errorLine = "((cons 0) ((cons ((cons 0) ((cons ((cons 0) nil)) ((cons 0) ((cons nil) nil))))) ((cons ((cons ((cons ((cons -1) -3)) ((cons ((cons 0) -3)) ((cons ((cons 1) -3)) ((cons ((cons 2) -2)) ((cons ((cons -2) -1)) ((cons ((cons -1) -1)) ((cons ((cons 0) -1)) ((cons ((cons 3) -1)) ((cons ((cons -3) 0)) ((cons ((cons -1) 0)) ((cons ((cons 1) 0)) ((cons ((cons 3) 0)) ((cons ((cons -3) 1)) ((cons ((cons 0) 1)) ((cons ((cons 1) 1)) ((cons ((cons 2) 1)) ((cons ((cons -2) 2)) ((cons ((cons -1) 3)) ((cons ((cons 0) 3)) ((cons ((cons 1) 3)) ((cons (((:1162 -3) -3) ((c ((b b) ((b :1162) (add ((c ((b b) ((b :1115) cdr))) ((c :1126) cdr)))))) (add 63)))) ((:1126 (((:1127 ((c ((b b) ((b :1115) ((s ((b :1162) ((c ((s ((b b) ((c ((b b) add)) neg))) ((b (s mul)) div))) 7))) ((c div) 7))))) ((c :1126) ((s ((b :1162) ((c ((s ((b b) ((c ((b b) add)) neg))) ((b (s mul)) div))) 7))) ((c div) 7))))) cons) 64)) ((c :1172) ((:1162 -3) -3))))))))))))))))))))))))) ((cons ((:1183 ((:1183 (:1214 ((((:1204 ((:1162 0) 0)) ((((:1166 -3) -3) 7) 7)) 0) -1))) ((:1162 -5) 0))) ((:1162 -3) -3))) ((cons ((:1183 (:1230 ((((:1204 ((:1162 0) 0)) ((((:1166 -3) -3) 7) 7)) 0) -1))) ((:1162 -3) -3))) nil)))) nil)))";
-            //var errorLine = "((cons 0) ((cons ((cons 0) ((cons ((cons 0) nil)) ((cons 0) ((cons nil) nil))))) ((cons ((cons ((cons ((cons -1) -3)) ((cons ((cons 0) -3)) ((cons ((cons 1) -3)) ((cons ((cons 2) -2)) ((cons ((cons -2) -1)) ((cons ((cons -1) -1)) ((cons ((cons 0) -1)) ((cons ((cons 3) -1)) ((cons ((cons -3) 0)) ((cons ((cons -1) 0)) ((cons ((cons 1) 0)) ((cons ((cons 3) 0)) ((cons ((cons -3) 1)) ((cons ((cons 0) 1)) ((cons ((cons 1) 1)) ((cons ((cons 2) 1)) ((cons ((cons -2) 2)) ((cons ((cons -1) 3)) ((cons ((cons 0) 3)) ((cons ((cons 1) 3)) ((c ((b b) ((b cons) ((s ((b cons) ((c ((s ((b b) ((c ((b b) add)) neg))) ((b (s mul)) div))) 7))) ((c div) 7))))) ((c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b cons)))) (c ((s ((b b) ((c isnil) nil))) ((c b) ((s ((b c) ((b (b b)) (b :1115)))) (c :1126))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) ((s ((b cons) ((c ((s ((b b) ((c ((b b) add)) neg))) ((b (s mul)) div))) 7))) ((c div) 7))))))))))))))))))))))))) ((cons ((cons ((cons -7) -3)) ((cons ((cons -8) -2)) nil))) ((cons nil) nil)))) nil)))";
-            //Evaluate(Lisp.Parse(GetStream(errorLine)).Children.First(), symbols, substitutions: true, debug: true);
-
-            var state = Parse("nil");
-            var vector = Parse("ap ap cons 0 0");
-            var protocolResult = Interact(symbols["galaxy"], state, vector, symbols);
-
-            Console.WriteLine("DONE!");
-            Console.WriteLine(protocolResult);
-        }
-
         public static string Serialize(LispNode node)
         {
             if (node.Type == LispNodeType.Token)
@@ -71,12 +41,19 @@ namespace Solver
             Console.WriteLine(Demodulate(result.Content.ReadAsStringAsync().Result).Item1);
         }
 
-        static LispNode Interact(
+        public static LispNode Interact(
             LispNode protocol,
             LispNode state,
-            LispNode vector,
+            string x,
+            string y,
             Dictionary<string, LispNode> symbols)
         {
+            var vector = 
+                new LispNode(
+                    new LispNode(
+                        new LispNode("cons"), 
+                        new LispNode(x)),
+                    new LispNode(y));
             var protocolResultRoot = new LispNode();
             protocolResultRoot.Children.Add(new LispNode());
             protocolResultRoot.Children.First().Children.Add(protocol);
@@ -94,36 +71,37 @@ namespace Solver
             return Program2.Evaluate(root, symbols);
         }
 
-            //var modifiedAnything = true;
+        //var modifiedAnything = true;
 
-            //while (modifiedAnything)
-            //{
-            //    if (debug)
-            //    {
-            //        //Console.WriteLine("--------");
-            //        //Console.WriteLine(root);
-            //        //Console.WriteLine("--------");
+        //while (modifiedAnything)
+        //{
+        //    if (debug)
+        //    {
+        //        //Console.WriteLine("--------");
+        //        //Console.WriteLine(root);
+        //        //Console.WriteLine("--------");
 
-            //        Console.Write(".");
-            //    }
+        //        Console.Write(".");
+        //    }
 
-            //    modifiedAnything = false;
-            //    foreach (var patternFunc in evalList)
-            //    {
-            //        if (EvaluateOne(root, patternFunc, symbols))
-            //        {
-            //            modifiedAnything = true;
-            //            break;
-            //        }
-            //    }
-            //}
+        //    modifiedAnything = false;
+        //    foreach (var patternFunc in evalList)
+        //    {
+        //        if (EvaluateOne(root, patternFunc, symbols))
+        //        {
+        //            modifiedAnything = true;
+        //            break;
+        //        }
+        //    }
+        //}
 
-            //return root;
+        //return root;
 
+        static readonly char[] SpaceDelim = new char[] { ' ' };
         public static LispNode Parse(string s)
         {
             var stack = new List<LispNode>();
-            foreach (var token in s.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(i => i.Trim()))
+            foreach (var token in s.Split(SpaceDelim, StringSplitOptions.RemoveEmptyEntries).Select(i => i.Trim()))
             {
                 if (token == "ap")
                 {
@@ -574,7 +552,7 @@ namespace Solver
 
                 return true;
             }
-            else if (pattern.Text.StartsWith('x'))
+            else if (pattern.Text.StartsWith("x"))
             {
                 ans.Add(Tuple.Create(pattern.Text, root));
                 return true;
@@ -700,6 +678,56 @@ namespace Solver
             
             sb.Append("]");
             return sb.ToString();
+        }
+
+        public static string TreeToJson(LispNode node, int indent = 0)
+        {
+            var sb = new StringBuilder();
+            TreeToJsonInternal(sb, node, 0, indent);
+            return sb.ToString();
+        }
+
+        static void TreeToJsonInternal(
+            StringBuilder sb,
+            LispNode node,
+            int depth,
+            int indent)
+        {
+            if (node.Type == LispNodeType.Token)
+            {
+                sb.Append('"');
+                sb.Append(node.Text);
+                sb.Append('"');
+            }
+            else
+            {
+                if (indent > 0)
+                {
+                    sb.Append(Environment.NewLine);
+                }
+
+                foreach (var i in Enumerable.Range(0, indent * depth))
+                {
+                    sb.Append(' ');
+                }
+
+                sb.Append('[');
+
+                var firstChild = true;
+                foreach (var child in node.Children)
+                {
+                    if (!firstChild)
+                    {
+                        sb.Append(", ");
+                    }
+
+                    TreeToJsonInternal(sb, child, depth + 1, indent);
+
+                    firstChild = false;
+                }
+
+                sb.Append(']');
+            }
         }
     }
 }
