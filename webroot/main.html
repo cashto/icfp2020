@@ -21,14 +21,12 @@ function onRequestComplete () {
 function paint(response) {
 	var oStatus = document.getElementById("idStatus");
 	var oState = document.getElementById("idState");
-	var oFlag = document.getElementById("idFlag");
 	var oDebug = document.getElementById("idDebug");
 	var oCanvas = document.getElementById("idCanvas");
 	var canvasContext = oCanvas.getContext("2d");
-	var colors = ['#999999', '#ffffff', '#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+	//var colors = ['#ffffff', '#999999', '#0000ff', '#00ff00', '#000099', '#ffff00', '#ff00ff', '#00ffff'];
 	
 	oStatus.innerHTML = 'Ready';
-	oFlag.innerHTML = cdr(response);
 	oState.value = JSON.stringify(cdr(car(response)));
 	oDebug.innerHTML = "";
 	
@@ -38,14 +36,14 @@ function paint(response) {
 	canvasContext.globalAlpha = 1.0;
 	canvasContext.fillStyle = '#000000';
 	canvasContext.fillRect(0, 0, oCanvas.width, oCanvas.height);
-	canvasContext.globalAlpha = 0.5;
 	
-	oDebug.innerHTML = "Screens: " + screens.length;
 	for (var i = 0; i < screens.length; ++i)
 	{
-		//oDebug.innerHTML += "<p>";
-		canvasContext.fillStyle = colors[i];
+		canvasContext.globalAlpha = 1.0 - 0.18 * i;
+		var color = (i == 0) ? '#ff9900' : '#ffffff';
+		canvasContext.fillStyle = color;
 		var points = listToArray(screens[i]);
+		oDebug.innerHTML += points.length + " ";
 		for (var j = 0; j < points.length; ++j)
 		{
 			var x = parseInt(cdr(points[j]));
@@ -101,10 +99,16 @@ function onLoad()
 </head>
 
 <body onload='onLoad()'>
-<canvas id=idCanvas width=1024 height=1024 style='border: solid 1px black; align: center' onclick='onClick()'></canvas>
+<table>
+<tr>
+<td>
+<canvas id=idCanvas width=900 height=900 style='border: solid 1px black; align: center' onclick='onClick()'></canvas>
+</td>
 
+<td valign=top>
 <p><b>Status:</b> <span id=idStatus></span>
-<p><b>Flag:</b> <span id=idFlag></span>
 <p><b>State:</b><br><textarea id=idState cols=120 rows=10></textarea>
 <p><b>Debug:</b> <span id=idDebug></span>
+</td>
+</table>
 </body>

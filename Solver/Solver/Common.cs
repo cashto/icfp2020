@@ -51,22 +51,30 @@ namespace IcfpUtils
 
         public static LispNode Send(LispNode content)
         {
-            var apiKey = "f6bc77050a4b4d2995b3f51b50155cdd";
+            try
+            {
+                var apiKey = "f6bc77050a4b4d2995b3f51b50155cdd";
 
-            var httpClient = new HttpClient();
-            var result = httpClient.SendAsync(
-                new HttpRequestMessage(
-                    HttpMethod.Post,
-                    $"https://icfpc2020-api.testkontur.ru/aliens/send?apiKey={apiKey}")
-                {
-                    Content = new StringContent(Modulate(content))
-                }).Result;
+                var httpClient = new HttpClient();
+                var result = httpClient.SendAsync(
+                    new HttpRequestMessage(
+                        HttpMethod.Post,
+                        $"https://icfpc2020-api.testkontur.ru/aliens/send?apiKey={apiKey}")
+                    {
+                        Content = new StringContent(Modulate(content))
+                    }).Result;
 
-            var response = Demodulate(result.Content.ReadAsStringAsync().Result).Item1;
+                var response = Demodulate(result.Content.ReadAsStringAsync().Result).Item1;
 
-            Console.WriteLine($"Sent [{content}], received [{response}]");
+                Console.WriteLine($"Sent [{Common.Flatten(content)}], received [{Common.Flatten(response)}]");
 
-            return response;
+                return response;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"ERROR: Sent [{Common.Flatten(content)}], received {e}");
+                throw;
+            }
         }
 
         public static string Modulate(BigInteger data)
