@@ -25,11 +25,11 @@ namespace Solver
 
         static LispNode Send(string serverUrl, LispNode request)
         {
-            if (!Uri.TryCreate(serverUrl, UriKind.Absolute, out var serverUri))
+            if (!Uri.TryCreate(serverUrl + "/aliens/send", UriKind.Absolute, out var serverUri))
             {
                 throw new Exception($"Failed to parse ServerUrl {serverUrl}");
             }
-
+            
             using var httpClient = new HttpClient { BaseAddress = serverUri };
             var requestContent = new StringContent(Common.Modulate(Common.Unflatten(request)), Encoding.UTF8, MediaTypeNames.Text.Plain);
             using var response = httpClient.PostAsync("", requestContent).Result;
