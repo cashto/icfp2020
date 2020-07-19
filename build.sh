@@ -1,2 +1,2 @@
 #!/bin/sh
-dotnet publish Solver/Solver.sln -c release -o ./build
+dotnet publish -c release -o ./build

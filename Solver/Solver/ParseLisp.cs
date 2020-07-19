@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Numerics;
 using System.CodeDom;
 using System.Collections;
 using System.Collections.Generic;
@@ -24,7 +25,7 @@ namespace IcfpUtils
             Text = s;
         }
 
-        public LispNode(long number) : this(number.ToString()) { }
+        public LispNode(BigInteger number) : this(number.ToString()) { }
 
         public LispNode()
         {

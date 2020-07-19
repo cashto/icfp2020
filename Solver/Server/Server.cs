@@ -13,7 +13,7 @@ using System.Net.Http;
 using System.Web.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
-using Solver;
+using System.Numerics;
 
 namespace Server
 {
@@ -28,7 +28,7 @@ namespace Server
             {
                 var x = line.Split('=');
                 var symbol = x[0].Trim();
-                var value = Program.Parse(x[1]);
+                var value = Common.Parse(x[1]);
 
                 Symbols[symbol] = value;
             }
@@ -40,6 +40,40 @@ namespace Server
             {
                 Console.WriteLine("Press any key to continue or any other key to detonate");
                 Console.ReadLine();
+            }
+        }
+
+        public static LispNode Interact(
+            LispNode protocol,
+            LispNode state,
+            string x,
+            string y,
+            Dictionary<string, LispNode> symbols)
+        {
+            var vector =
+                new LispNode(
+                    new LispNode(
+                        new LispNode("cons"),
+                        new LispNode(x)),
+                    new LispNode(y));
+
+            while (true)
+            {
+                var protocolResultRoot = new LispNode();
+                protocolResultRoot.Children.Add(new LispNode());
+                protocolResultRoot.Children.First().Children.Add(protocol);
+                protocolResultRoot.Children.First().Children.Add(state);
+                protocolResultRoot.Children.Add(vector);
+                var result = Evaluate(protocolResultRoot, symbols);
+
+                if (result.Children.First().Children.Last().Text == "0")
+                {
+                    return result;
+                }
+
+                state = result.Children.Last().Children.First().Children.Last();
+                var data = result.Children.Last().Children.Last().Children.First().Children.Last();
+                vector = Common.Send(data);
             }
         }
 
@@ -55,6 +89,168 @@ namespace Server
             }
         }
 
+        public static string TreeToJson(LispNode node, int indent = 0)
+        {
+            var sb = new StringBuilder();
+            TreeToJsonInternal(sb, node, 0, indent);
+            return sb.ToString();
+        }
+
+        static void TreeToJsonInternal(
+            StringBuilder sb,
+            LispNode node,
+            int depth,
+            int indent)
+        {
+            if (node.Type == LispNodeType.Token)
+            {
+                sb.Append('"');
+                sb.Append(node.Text);
+                sb.Append('"');
+            }
+            else
+            {
+                if (indent > 0)
+                {
+                    sb.Append(Environment.NewLine);
+                }
+
+                foreach (var i in Enumerable.Range(0, indent * depth))
+                {
+                    sb.Append(' ');
+                }
+
+                sb.Append('[');
+
+                var firstChild = true;
+                foreach (var child in node.Children)
+                {
+                    if (!firstChild)
+                    {
+                        sb.Append(", ");
+                    }
+
+                    TreeToJsonInternal(sb, child, depth + 1, indent);
+
+                    firstChild = false;
+                }
+
+                sb.Append(']');
+            }
+        }
+
+        public static LispNode Evaluate(
+            LispNode expr,
+            Dictionary<string, LispNode> symbols)
+        {
+            if (expr.Evaluated != null)
+            {
+                return expr.Evaluated;
+            }
+
+            LispNode initialExpr = expr;
+            while (true)
+            {
+                var result = TryEval(expr, symbols);
+
+                if (result == expr)
+                {
+                    initialExpr.Evaluated = result;
+                    return result;
+                }
+
+                expr = result;
+            }
+        }
+
+        static readonly LispNode t = new LispNode("t");
+        static readonly LispNode f = new LispNode("f");
+        static readonly LispNode cons = new LispNode("cons");
+        static readonly LispNode nil = new LispNode("nil");
+
+        static LispNode TryEval(
+            LispNode expr,
+            Dictionary<string, LispNode> symbols)
+        {
+            if (expr.Evaluated != null)
+            {
+                return expr.Evaluated;
+            }
+
+            if (expr.Type == LispNodeType.Token && symbols.ContainsKey(expr.Text))
+            {
+                return symbols[expr.Text];
+            }
+
+            if (expr.Type == LispNodeType.Open)
+            {
+                var fun = Evaluate(expr.Children.First(), symbols);
+                var x = expr.Children.Last();
+
+                if (fun.Type == LispNodeType.Token)
+                {
+                    if (fun.Text == "neg") return new LispNode(-AsNum(Evaluate(x, symbols)));
+                    if (fun.Text == "i") return x;
+                    if (fun.Text == "nil") return t;
+                    if (fun.Text == "isnil") return new LispNode(x, new LispNode(t, new LispNode(t, f)));
+                    if (fun.Text == "car") return new LispNode(x, t);
+                    if (fun.Text == "cdr") return new LispNode(x, f);
+                    if (fun.Text == "inc") return new LispNode(AsNum(Evaluate(x, symbols)) + 1);
+                    if (fun.Text == "dec") return new LispNode(AsNum(Evaluate(x, symbols)) - 1);
+                }
+
+                if (fun.Type == LispNodeType.Open)
+                {
+                    var fun2 = Evaluate(fun.Children.First(), symbols);
+                    var y = fun.Children.Last();
+
+                    if (fun2.Type == LispNodeType.Token)
+                    {
+                        if (fun2.Text == "t") return y;
+                        if (fun2.Text == "f") return x;
+                        if (fun2.Text == "add") return new LispNode(AsNum(Evaluate(x, symbols)) + AsNum(Evaluate(y, symbols)));
+                        if (fun2.Text == "mul") return new LispNode(AsNum(Evaluate(x, symbols)) * AsNum(Evaluate(y, symbols)));
+                        if (fun2.Text == "div") return new LispNode(AsNum(Evaluate(y, symbols)) / AsNum(Evaluate(x, symbols)));
+                        if (fun2.Text == "lt") return AsNum(Evaluate(y, symbols)) < AsNum(Evaluate(x, symbols)) ? t : f;
+                        if (fun2.Text == "eq") return AsNum(Evaluate(x, symbols)) == AsNum(Evaluate(y, symbols)) ? t : f;
+                        if (fun2.Text == "cons") return EvalCons(y, x, symbols);
+                    }
+
+                    if (fun2.Type == LispNodeType.Open)
+                    {
+                        var fun3 = Evaluate(fun2.Children.First(), symbols);
+                        var z = fun2.Children.Last();
+
+                        if (fun3.Type == LispNodeType.Token)
+                        {
+                            if (fun3.Text == "s") return new LispNode(new LispNode(z, x), new LispNode(y, x));
+                            if (fun3.Text == "c") return new LispNode(new LispNode(z, x), y);
+                            if (fun3.Text == "b") return new LispNode(z, new LispNode(y, x));
+                            if (fun3.Text == "cons") return new LispNode(new LispNode(x, z), y);
+                        }
+                    }
+                }
+            }
+
+            return expr;
+        }
+
+        static LispNode EvalCons(LispNode a, LispNode b, Dictionary<string, LispNode> symbols)
+        {
+            var res = new LispNode(new LispNode(cons, Evaluate(a, symbols)), Evaluate(b, symbols));
+            res.Evaluated = res;
+            return res;
+        }
+
+        static BigInteger AsNum(LispNode n)
+        {
+            if (n.Type == LispNodeType.Token)
+            {
+                return BigInteger.Parse(n.Text);
+            }
+
+            throw new Exception("not a number");
+        }
     }
 
     public class Startup
@@ -73,7 +269,7 @@ namespace Server
 
             appBuilder.UseWebApi(config);
 
-            const string rootFolder = @".";
+            const string rootFolder = @"C:\Users\cashto\Documents\GitHub\icfp2020\webroot";
 
             appBuilder.UseFileServer(
                 new FileServerOptions
@@ -98,8 +294,8 @@ namespace Server
         {
             return
                 JsonConvert.DeserializeObject<JToken>(
-                    Program.TreeToJson(
-                        Program.Interact(
+                    Server.TreeToJson(
+                        Server.Interact(
                             Server.Symbols["galaxy"],
                             Server.JsonToLispNode(body.state),
                             body.x,
