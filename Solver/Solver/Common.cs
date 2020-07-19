@@ -186,5 +186,42 @@ namespace IcfpUtils
 
             return new string(sb.Reverse<char>().ToArray());
         }
+
+        public static LispNode Flatten(LispNode node)
+        {
+            if (node.Type == LispNodeType.Token)
+            {
+                return node;
+            }
+
+            var ans = new LispNode();
+            while (node.Type != LispNodeType.Token)
+            {
+                ans.Add(Flatten(node.First().Last()));
+                node = node.Last();
+            }
+
+            return ans;
+        }
+
+        public static LispNode Unflatten(LispNode node)
+        {
+            if (node.Type == LispNodeType.Token)
+            {
+                return node;
+            }
+
+            var ans = new LispNode("nil");
+            foreach (var child in node.Reverse())
+            {
+                ans =
+                    new LispNode() {
+                        new LispNode() {
+                            new LispNode("cons"), Unflatten(child) },
+                        ans };
+            }
+
+            return ans;
+        }
     }
 }

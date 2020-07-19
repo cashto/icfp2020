@@ -157,6 +157,31 @@ namespace UnitTests
             //Console.WriteLine(Program.TreeToJson(tree));
         }
 
+        [TestMethod]
+        public void TestFlatten()
+        {
+            var test =
+                new LispNode() {
+                    new LispNode("0"),
+                    new LispNode("12345678"),
+                    new LispNode() {
+                        new LispNode("1"),
+                        new LispNode("2"),
+                        new LispNode() {
+                            new LispNode("3"),
+                            new LispNode("4")
+                        }
+                    }
+                };
+
+            var notFlat = Common.Unflatten(test);
+            var flat = Common.Flatten(notFlat);
+            Console.WriteLine(test);
+            Console.WriteLine(notFlat);
+            Console.WriteLine(flat);
+            Assert.AreEqual(test.ToString(), flat.ToString());
+        }
+
         private void TestEvaluate(string fn, string reference, Dictionary<string, LispNode> symbols = null)
         {
 /*

@@ -17,7 +17,7 @@ namespace IcfpUtils
         Close
     }
 
-    public class LispNode
+    public class LispNode : IEnumerable<LispNode>
     {
         public LispNode(string s)
         {
@@ -37,6 +37,15 @@ namespace IcfpUtils
             Type = LispNodeType.Open;
             this.Children.Add(lhs);
             this.Children.Add(rhs);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => Children.GetEnumerator();
+
+        public IEnumerator<LispNode> GetEnumerator() => Children.GetEnumerator();
+
+        public void Add(LispNode node)
+        {
+            this.Children.Add(node);
         }
 
         public LispNode Evaluated { get; set; }
