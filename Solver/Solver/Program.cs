@@ -231,7 +231,7 @@ namespace Solver
         {
             var staticGameState =
                 gameResponse[1].Text == "2" ?
-                new StaticGameState() :
+                new StaticGameState() { DefaultLife = 10, DefaultRecharge = 6, DefaultWeapon = 6, DefaultSplit = 1 } :
                 new StaticGameState(gameResponse[2]);
 
             return 
@@ -243,7 +243,7 @@ namespace Solver
                             new LispNode(staticGameState.DefaultLife),
                             new LispNode(staticGameState.DefaultWeapon + 16),
                             new LispNode(staticGameState.DefaultRecharge + 16),
-                            new LispNode(Math.Max(staticGameState.DefaultSplit, 1))
+                            new LispNode(staticGameState.DefaultSplit)
                         }
                     });
         }
