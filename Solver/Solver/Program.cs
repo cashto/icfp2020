@@ -247,6 +247,7 @@ namespace Solver
         public static LispNode MakeStartRequest(string playerKey, LispNode gameResponse)
         {
             var staticGameState = new StaticGameState(gameResponse[2]);
+            int extraFactor = gameResponse[0].Text == "1" ? 1 : 0;
 
             return 
                 Common.Unflatten(
@@ -255,8 +256,8 @@ namespace Solver
                         new LispNode(playerKey), 
                         new LispNode() {
                             new LispNode(staticGameState.DefaultLife),
-                            new LispNode(staticGameState.DefaultWeapon + 16),
-                            new LispNode(staticGameState.DefaultRecharge + 16),
+                            new LispNode(staticGameState.DefaultWeapon + 16 * extraFactor),
+                            new LispNode(staticGameState.DefaultRecharge + 16 * extraFactor),
                             new LispNode(staticGameState.DefaultSplit)
                         }
                     });
