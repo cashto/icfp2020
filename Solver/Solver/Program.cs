@@ -4,12 +4,7 @@ using System.Text;
 using IcfpUtils;
 using System.Net.Http;
 using System.Net.Mime;
-using System.Threading.Tasks;
 using System.Collections.Generic;
-using System.ComponentModel;
-using Microsoft.VisualBasic.CompilerServices;
-using System.Security.Cryptography.X509Certificates;
-using System.Runtime.CompilerServices;
 
 namespace Solver
 {
@@ -43,6 +38,12 @@ namespace Solver
         {
             var t = this - other;
             return Math.Max(Math.Abs(t.X), Math.Abs(t.Y));
+        }
+
+        public int ManhattanlDistanceTo(Point other)
+        {
+            var t = this - other;
+            return Math.Abs(t.X) + Math.Abs(t.Y);
         }
 
         public static readonly Point Zero = new Point(0, 0);
@@ -134,6 +135,7 @@ namespace Solver
         public int Recharge { get; set; }
         public int Splits { get; set; }
         public int Energy { get; set; }
+        public int EnergyLeft { get => MaxEnergy - Energy; }
         public int MaxEnergy { get; set; }
         public bool Alive { get; set; }
 
@@ -168,6 +170,7 @@ namespace Solver
         {
             PlanetSize = 5;
             UniverseSize = 64;
+            DefaultLife = 1;
             DefaultSplit = 1;
         }
 
@@ -239,7 +242,7 @@ namespace Solver
 
             var responseString = response.Content.ReadAsStringAsync().Result;
             var result = Common.Flatten(Common.Demodulate(responseString).Item1);
-            Console.WriteLine($"Sent [{request}] {Common.Flatten(request)}] received [{result}]");
+            Console.WriteLine($"Sent {Common.Flatten(request)}] received [{result}] -- [{request}]");
 
             return result;
         }
@@ -322,15 +325,22 @@ namespace Solver
                 accelVector.Y = Math.Max(accelVector.Y, -1);
                 accelVector.Y = Math.Min(accelVector.Y, 1);
 
-                if (accelVector.X != 0 && accelVector.Y != 0)
+                var energyUsed = 0;
+                if (accelVector.X != 0 && accelVector.Y != 0 && ship.EnergyLeft >= 8 && ship.Life > 0)
                 {
                     commands.Add(Command.Accelerate(ship.Id, accelVector));
+                    energyUsed += 8;
                 }
 
                 if (staticGameState.Role == Role.Attacker &&
                     theirShips.Any(theirShip => (ship.Position + ship.Velocity).DiagonalDistanceTo(theirShip.Position + theirShip.Velocity) < 5))
                 {
                     commands.Add(Command.Detonate(ship.Id));
+                }
+
+                if (ship.EnergyLeft >= energyUsed)
+                {
+
                 }
             }
 
