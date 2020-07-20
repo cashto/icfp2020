@@ -304,52 +304,53 @@ namespace Solver
         static readonly List<StaticGameState> StartRequests = new List<StaticGameState>() {
             new StaticGameState()
             {
-                DefaultLife = 100, // 450 .. 500
-                DefaultWeapon = 40, // 100 .. 125
-                DefaultRecharge = 12, // 33 .. 40
-                DefaultSplit = 2
-            },
-
-            new StaticGameState()
-            {
-                DefaultLife = 350,
-                DefaultWeapon = 0,
-                DefaultRecharge = 8,
-                DefaultSplit = 1
-            },
-
-            new StaticGameState()
-            {
-                DefaultLife = 10,
-                DefaultWeapon = 10,
-                DefaultRecharge = 10,
-                DefaultSplit = 1
-            },
-
-            new StaticGameState()
-            {
-                DefaultLife = 0,
-                DefaultWeapon = 16,
-                DefaultRecharge = 16,
-                DefaultSplit = 1
-            },
-
-            new StaticGameState()
-            {
-                DefaultLife = 1,
-                DefaultWeapon = 0,
-                DefaultRecharge = 0,
-                DefaultSplit = 1
-            },
-
-            new StaticGameState()
-            {
-                DefaultLife = 0,
-                DefaultWeapon = 0,
-                DefaultRecharge = 0,
-                DefaultSplit = 1
+                DefaultLife = 0, // 450 .. 500
+                DefaultWeapon = 0, // 100 .. 125
+                DefaultRecharge = 0, // 33 .. 40
+                DefaultSplit = 16 // 2 ..
             },
         };
+
+        //    new StaticGameState()
+        //    {
+        //        DefaultLife = 350,
+        //        DefaultWeapon = 0,
+        //        DefaultRecharge = 8,
+        //        DefaultSplit = 1
+        //    },
+
+        //    new StaticGameState()
+        //    {
+        //        DefaultLife = 10,
+        //        DefaultWeapon = 10,
+        //        DefaultRecharge = 10,
+        //        DefaultSplit = 1
+        //    },
+
+        //    new StaticGameState()
+        //    {
+        //        DefaultLife = 0,
+        //        DefaultWeapon = 16,
+        //        DefaultRecharge = 16,
+        //        DefaultSplit = 1
+        //    },
+
+        //    new StaticGameState()
+        //    {
+        //        DefaultLife = 1,
+        //        DefaultWeapon = 0,
+        //        DefaultRecharge = 0,
+        //        DefaultSplit = 1
+        //    },
+
+        //    new StaticGameState()
+        //    {
+        //        DefaultLife = 0,
+        //        DefaultWeapon = 0,
+        //        DefaultRecharge = 0,
+        //        DefaultSplit = 1
+        //    },
+        //};
 
         public static LispNode MakeStartRequest(string playerKey, LispNode gameResponse)
         {
@@ -442,6 +443,8 @@ namespace Solver
                 CancellationToken.None,
                 (sn) => GenerateMoves(sn, staticGameState, ship));
 
+            nodes = nodes.ToList();
+
             var orderedNodes =
                 from node in nodes
                 where node.Depth == 3
@@ -451,6 +454,8 @@ namespace Solver
                 let score = GetScore(node.State, staticGameState, myShip)
                 orderby score descending
                 select node;
+
+            orderedNodes = orderedNodes.ToList();
 
             var theNode = orderedNodes.First();
             Console.WriteLine("Moves: " + string.Join("; ", theNode.Moves.Select(move => move.Vector)));
@@ -523,16 +528,23 @@ namespace Solver
             var commands = new List<Command>();
             foreach (var ship in myShips)
             {
-                //var gravity = CalculateGravity(ship.Position, staticGameState.PlanetSize);
-                //var desiredVelocity = GetDesiredVelocity(ship, staticGameState.PlanetSize);
-                //var accelVector = (ship.Velocity + gravity) - desiredVelocity;
-                //accelVector.X = Math.Max(accelVector.X, -1);
-                //accelVector.X = Math.Min(accelVector.X, 1);
-                //accelVector.Y = Math.Max(accelVector.Y, -1);
-                //accelVector.Y = Math.Min(accelVector.Y, 1);
-
                 var energyLeft = ship.MaxEnergy - ship.Energy;
-                var accelVector = Search(gameState, staticGameState, ship).Vector;
+                var accelVector = Point.Zero;
+
+                //try 
+                //{ 
+                    accelVector = Search(gameState, staticGameState, ship).Vector; 
+                //} 
+                //catch 
+                //{
+                //    var gravity = CalculateGravity(ship.Position, staticGameState.PlanetSize);
+                //    var desiredVelocity = GetDesiredVelocity(ship, staticGameState.PlanetSize);
+                //    accelVector = (ship.Velocity + gravity) - desiredVelocity;
+                //}
+
+                accelVector.X = Common.Bound(accelVector.X, -1, 1);
+                accelVector.Y = Common.Bound(accelVector.Y, -1, 1);
+
                 if (accelVector.X != 0 && accelVector.Y != 0 && energyLeft >= 8 && ship.Life > 0)
                 {
                     commands.Add(Command.Accelerate(ship.Id, accelVector));
