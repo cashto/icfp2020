@@ -164,14 +164,15 @@ namespace Solver
         public int DefaultRecharge { get; set; }
         public int DefaultSplit { get; set; }
 
-        public StaticGameState() { }
-
-        public StaticGameState(LispNode node)
+        public StaticGameState()
         {
             PlanetSize = 5;
             UniverseSize = 64;
             DefaultSplit = 1;
+        }
 
+        public StaticGameState(LispNode node) : this()
+        {
             if (node.Count() < 4)
             {
                 return;
@@ -256,7 +257,7 @@ namespace Solver
 
         public static LispNode MakeStartRequest(string playerKey, LispNode gameResponse)
         {
-            var staticGameState = new StaticGameState(gameResponse[2]);
+            var staticGameState = IsSuccess(gameResponse) ? new StaticGameState(gameResponse[2]) : new StaticGameState();
             int extraFactor = IsSuccess(gameResponse) ? 1 : 0;
 
             return 
