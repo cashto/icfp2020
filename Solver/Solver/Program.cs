@@ -5,13 +5,19 @@ using IcfpUtils;
 using System.Net.Http;
 using System.Net.Mime;
 using System.Collections.Generic;
+using System.Numerics;
 
 namespace Solver
 {
-    struct Point
+    public struct Point
     {
         public int X { get; set; }
         public int Y { get; set; }
+
+        public override string ToString()
+        {
+            return $"({X}, {Y})";
+        }
 
         public Point(int x, int y)
         {
@@ -49,7 +55,7 @@ namespace Solver
         public static readonly Point Zero = new Point(0, 0);
     }
 
-    enum CommandType
+    public enum CommandType
     {
         Accelerate,
         Detonate,
@@ -57,12 +63,13 @@ namespace Solver
         Split
     }
 
-    class Command
+    public class Command
     {
         public int ShipID { get; set; }
         public CommandType Type { get; set; }
         public LispNode Argument1 { get; set; }
         public LispNode Argument2 { get; set; }
+        public Point Vector { get; set; }
 
         public static Command Accelerate(int id, Point vec)
         {
@@ -73,7 +80,8 @@ namespace Solver
                     new LispNode(
                         new LispNode("cons"),
                         new LispNode(vec.X)),
-                    new LispNode(vec.Y)));
+                    new LispNode(vec.Y)))
+                { Vector = vec };
         }
 
         public static Command Detonate(int id)
@@ -93,7 +101,8 @@ namespace Solver
                         new LispNode("cons"),
                         new LispNode(target.X)),
                     new LispNode(target.Y)),
-                new LispNode(power));
+                new LispNode(power))
+            { Vector = target };
         }
 
         private Command() { }
@@ -130,7 +139,7 @@ namespace Solver
         }
     }
 
-    class GameState
+    public class GameState
     {
         public int Tick { get; set; }
         public List<Ship> Ships { get; set; }
@@ -142,13 +151,13 @@ namespace Solver
         }
     }
 
-    enum Role
+    public enum Role
     {
         Attacker,
         Defender
     }
 
-    class Ship
+    public class Ship
     {
         public Role Role { get; set; }
         public int Id { get; set; }
@@ -179,7 +188,7 @@ namespace Solver
         }
     }
 
-    class StaticGameState
+    public class StaticGameState
     {
         public int MaxTicks { get; set; }
         public Role Role { get; set; }
@@ -398,7 +407,7 @@ namespace Solver
             return new Point(x, y);
         }
 
-        static List<Command> MakeCommandsRequest(GameState gameState, StaticGameState staticGameState)
+        public static List<Command> MakeCommandsRequest(GameState gameState, StaticGameState staticGameState)
         {
             var myShips = gameState.Ships.Where(i => i.Role == staticGameState.Role);
             var enemyShips = gameState.Ships.Where(i => i.Role != staticGameState.Role).ToList();
@@ -406,9 +415,9 @@ namespace Solver
             foreach (var ship in myShips)
             {
                 var gravity = CalculateGravity(ship.Position, staticGameState.PlanetSize);
-                var desiredVelocity1 = Scale(new Point(-ship.Position.Y, ship.Position.X), 4);
-                var desiredVelocity2 = Scale(new Point(ship.Position.Y, -ship.Position.X), 4);
-                var desiredVelocity = (ship.Velocity + gravity - desiredVelocity1).SquareMagnitude() > (ship.Velocity + gravity - desiredVelocity2).SquareMagnitude() ?
+                var desiredVelocity1 = Scale(new Point(ship.Position.Y, -ship.Position.X), 5);
+                var desiredVelocity2 = Scale(new Point(-ship.Position.Y, ship.Position.X), 5);
+                var desiredVelocity = ((ship.Velocity + gravity) - desiredVelocity1).SquareMagnitude() > ((ship.Velocity + gravity) - desiredVelocity2).SquareMagnitude() ?
                     desiredVelocity2 : desiredVelocity1;
                 var accelVector = (ship.Velocity + gravity) - desiredVelocity;
                 accelVector.X = Math.Max(accelVector.X, -1);

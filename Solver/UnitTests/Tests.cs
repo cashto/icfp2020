@@ -192,9 +192,18 @@ namespace UnitTests
             Program.MakeStartRequest("123", Lisp.Parse(input)[0]);
 
             input = "(1 1 (256 0 (512 1 64) (16 128) (350 0 8 1)) (0 (16 128) (((1 0 (-48 44) (0 0) (350 0 8 1) 0 64 1) ()) ((0 1 (48 -44) (0 0) (0 16 16 1) 0 64 1) ()))))";
-            var output = Program.MakeCommandsRequest("123", Lisp.Parse(input)[0]);
+            //var output = Program.MakeCommandsRequest("123", Lisp.Parse(input)[0]);
 
-            Console.WriteLine(Common.Flatten(output));
+            //Console.WriteLine(Common.Flatten(output));
+
+            input = "(1 1 (256 0 (512 1 64) (16 128) (416 0 0 16)) (1 (16 128) (((1 0 (-47 -11) (1 -1) (415 0 0 16) 8 64 1) ((0 (0 1)))) ((0 1 (46 9) (-2 -1) (127 8 8 1) 0 64 1) ((0 (1 1)))))))";
+            var gameState = Lisp.Parse(input)[0];
+            var commands = Program.MakeCommandsRequest(
+                new GameState(gameState[3]),
+                new StaticGameState(gameState[2]));
+
+            Assert.AreEqual(commands[0].Vector.X, -1);
+            Assert.AreEqual(commands[0].Vector.Y, 1);
         }
 
         private void TestEvaluate(string fn, string reference, Dictionary<string, LispNode> symbols = null)
