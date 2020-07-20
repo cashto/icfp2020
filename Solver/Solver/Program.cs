@@ -564,8 +564,9 @@ namespace Solver
             var commands = new List<Command>();
             foreach (var ship in myShips)
             {
-                var energyLeft = ship.MaxEnergy - ship.Energy;
+                var energyLeft = ship.MaxEnergy - ship.Energy + ship.Recharge;
                 var accelVector = Point.Zero;
+                var gravity = CalculateGravity(ship.Position, staticGameState.PlanetSize);
 
                 try
                 {
@@ -574,7 +575,6 @@ namespace Solver
                 catch (Exception e)
                 {
                     Console.WriteLine($"Search exception {e})");
-                    var gravity = CalculateGravity(ship.Position, staticGameState.PlanetSize);
                     var desiredVelocity = GetDesiredVelocity(ship, staticGameState.PlanetSize);
                     accelVector = (ship.Velocity + gravity) - desiredVelocity;
                 }
@@ -589,7 +589,8 @@ namespace Solver
                 }
 
                 if (staticGameState.Role == Role.Attacker &&
-                    enemyShips.Any(theirShip => (ship.Position + ship.Velocity).DiagonalDistanceTo(theirShip.Position + theirShip.Velocity) < 5))
+                    enemyShips.Count == 1 &&
+                    enemyShips.Any(theirShip => (ship.Position + ship.Velocity + gravity).DiagonalDistanceTo(theirShip.Position + theirShip.Velocity + gravity) < 5))
                 {
                     commands.Add(Command.Detonate(ship.Id));
                 }
@@ -598,16 +599,16 @@ namespace Solver
                 {
                     var sortedEnemies =
                         from enemyShip in enemyShips
-                        let distance = (enemyShip.Position + enemyShip.Velocity).ManhattanDistanceTo(ship.Position + ship.Velocity)
+                        let distance = (enemyShip.Position + enemyShip.Velocity + gravity).ManhattanDistanceTo(ship.Position + ship.Velocity + gravity)
                         orderby distance ascending
                         select enemyShip;
 
                     var closestEnemy = sortedEnemies.First();
-                    var closestEnemyDistance = (closestEnemy.Position + closestEnemy.Velocity).ManhattanDistanceTo(ship.Position + ship.Velocity);
+                    var closestEnemyDistance = (closestEnemy.Position + closestEnemy.Velocity + gravity).ManhattanDistanceTo(ship.Position + ship.Velocity + gravity);
 
                     if (closestEnemyDistance < 32)
                     {
-                        commands.Add(Command.Shoot(ship.Id, closestEnemy.Position + closestEnemy.Velocity, energyLeft));
+                        commands.Add(Command.Shoot(ship.Id, closestEnemy.Position + closestEnemy.Velocity + gravity, energyLeft));
                     }
 
                 }
