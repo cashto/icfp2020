@@ -307,7 +307,7 @@ namespace Solver
                 DefaultLife = 100, // 450 .. 500
                 DefaultWeapon = 40, // 100 .. 125
                 DefaultRecharge = 12, // 33 .. 40
-                DefaultSplit = 1
+                DefaultSplit = 2
             },
 
             new StaticGameState()
@@ -418,7 +418,7 @@ namespace Solver
         static bool InUniverse(Point p, StaticGameState staticGameState)
         {
             return 
-                Math.Abs(p.X) > staticGameState.PlanetSize && Math.Abs(p.Y) > staticGameState.PlanetSize &&
+                (Math.Abs(p.X) > staticGameState.PlanetSize || Math.Abs(p.Y) > staticGameState.PlanetSize) &&
                 Math.Abs(p.X) < staticGameState.UniverseSize && Math.Abs(p.Y) < staticGameState.UniverseSize;
         }
 
