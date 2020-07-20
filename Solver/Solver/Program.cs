@@ -409,6 +409,7 @@ namespace Solver
             return new Point(x, y);
         }
 
+        /*
         static void Search(GameState gameState, Ship ship)
         {
             Algorithims.Search<GameState, Command>(
@@ -417,6 +418,7 @@ namespace Solver
                 CancellationToken.None,
                 (sn) => GenerateMoves(sn, ship));
         }
+
 
         static IEnumerable<SearchNode<GameState, Command>> GenerateMoves(SearchNode<GameState, Command> searchNode, Ship ship)
         {
@@ -434,6 +436,7 @@ namespace Solver
                 }
             }
         }
+        */
 
         public static List<Command> MakeCommandsRequest(GameState gameState, StaticGameState staticGameState)
         {
