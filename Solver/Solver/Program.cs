@@ -13,6 +13,162 @@ using System.Runtime.CompilerServices;
 
 namespace Solver
 {
+    struct Point
+    {
+        public int X { get; set; }
+        public int Y { get; set; }
+
+        public Point(int x, int y)
+        {
+            X = x;
+            Y = y;
+        }
+
+        public int SquareMagnitude()
+        {
+            return X * X + Y * Y;
+        }
+
+        public static Point operator -(Point lhs, Point rhs)
+        {
+            return new Point(lhs.X - rhs.X, lhs.Y - rhs.Y);
+        }
+
+        public static Point operator +(Point lhs, Point rhs)
+        {
+            return new Point(lhs.X + rhs.X, lhs.Y + rhs.Y);
+        }
+
+        public int DiagonalDistanceTo(Point other)
+        {
+            var t = this - other;
+            return Math.Max(Math.Abs(t.X), Math.Abs(t.Y));
+        }
+
+        public static readonly Point Zero = new Point(0, 0);
+    }
+
+    enum CommandType
+    {
+        Accelerate,
+        Detonate,
+        Shoot,
+        Split
+    }
+
+    class Command
+    {
+        public int ShipID { get; set; }
+        public CommandType Type { get; set; }
+        public LispNode Argument { get; set; }
+
+        public static Command Accelerate(int id, Point vec)
+        {
+            return new Command(
+                CommandType.Accelerate,
+                id,
+                new LispNode(
+                    new LispNode(
+                        new LispNode("cons"),
+                        new LispNode(vec.X)),
+                    new LispNode(vec.Y)));
+        }
+
+        public static Command Detonate(int id)
+        {
+            return new Command(
+                CommandType.Detonate,
+                id);
+        }
+
+        private Command() { }
+
+        private Command(CommandType type, int shipID, LispNode argument = null)
+        {
+            ShipID = shipID;
+            Type = type;
+            Argument = argument;
+        }
+
+        public LispNode ToLispNode()
+        {
+            var ans = Common.Unflatten(new LispNode() { new LispNode((int)Type), new LispNode(ShipID) });
+            if (Argument != null)
+            {
+                ans[1].Children[1] =
+                    new LispNode(
+                        new LispNode(new LispNode("cons"), Argument),
+                        new LispNode("nil"));
+            }
+
+            return ans;
+        }
+    }
+
+    class GameState
+    {
+        public int Tick { get; set; }
+        public List<Ship> Ships { get; set; }
+
+        public GameState(LispNode node)
+        {
+            Tick = int.Parse(node[0].Text);
+            Ships = node[2].Select(i => new Ship(i[0])).ToList();
+        }
+    }
+
+    enum Role
+    {
+        Attacker,
+        Defender
+    }
+
+    class Ship
+    {
+        public Role Role { get; set; }
+        public int Id { get; set; }
+        public Point Position { get; set; }
+        public Point Velocity { get; set; }
+        public int Life { get; set; }
+        public int Weapon { get; set; }
+        public int Fuel { get; set; }
+        public int Splits { get; set; }
+        public int Energy { get; set; }
+        public int MaxEnergy { get; set; }
+        public bool Alive { get; set; }
+
+        public Ship(LispNode node)
+        {
+            Role = (Role)int.Parse(node[0].Text);
+            Id = int.Parse(node[1].Text);
+            Position = new Point() { X = int.Parse(node[2][0].Text), Y = int.Parse(node[2][1].Text) };
+            Velocity = new Point() { X = int.Parse(node[3][0].Text), Y = int.Parse(node[3][1].Text) };
+            Life = int.Parse(node[4][0].Text);
+            Weapon = int.Parse(node[4][1].Text);
+            Fuel = int.Parse(node[4][2].Text);
+            Splits = int.Parse(node[4][3].Text);
+            Energy = int.Parse(node[5].Text);
+            MaxEnergy = int.Parse(node[6].Text);
+            Alive = node[7].Text != "0";
+        }
+    }
+
+    class StaticGameState
+    {
+        public int MaxTicks { get; set; }
+        public Role Role { get; set; }
+        public int PlanetSize { get; set; }
+        public int UniverseSize { get; set; }
+
+        public StaticGameState(LispNode node)
+        {
+            MaxTicks = int.Parse(node[0].Text);
+            Role = (Role)int.Parse(node[1].Text);
+            PlanetSize = int.Parse(node[3][0].Text);
+            UniverseSize = int.Parse(node[3][1].Text);
+        }
+    }
+
     public static class Program
     {
         public static void Main(string[] args)
@@ -45,7 +201,7 @@ namespace Solver
 
             var responseString = response.Content.ReadAsStringAsync().Result;
             var result = Common.Flatten(Common.Demodulate(responseString).Item1);
-            Console.WriteLine($"Sent [{Common.Flatten(request)}] received [{result}]");
+            Console.WriteLine($"Sent [{request}] {Common.Flatten(request)}] received [{result}]");
 
             return result;
         }
@@ -85,9 +241,11 @@ namespace Solver
 
         public static LispNode MakeCommandsRequest(string playerKey, LispNode gameResponse)
         {
-            var commands = MakeCommandsRequest(
-                new GameState(gameResponse[3]), 
-                new StaticGameState(gameResponse[2]));
+            var commands = (gameResponse[0].Text != "1") ?
+                new List<Command>() :
+                MakeCommandsRequest(
+                    new GameState(gameResponse[3]), 
+                    new StaticGameState(gameResponse[2]));
 
             var ans = Common.Unflatten(
                 new LispNode() {
@@ -123,7 +281,10 @@ namespace Solver
                 accelVector.Y = Math.Max(accelVector.Y, -1);
                 accelVector.Y = Math.Min(accelVector.Y, 1);
 
-                commands.Add(Command.Accelerate(ship.Id, accelVector));
+                if (accelVector.X != 0 && accelVector.Y != 0)
+                {
+                    commands.Add(Command.Accelerate(ship.Id, accelVector));
+                }
 
                 if (staticGameState.Role == Role.Attacker &&
                     theirShips.Any(theirShip => (ship.Position + ship.Velocity).DiagonalDistanceTo(theirShip.Position + theirShip.Velocity) < 5))
@@ -133,162 +294,6 @@ namespace Solver
             }
 
             return commands;
-        }
-
-        struct Point
-        {
-            public int X { get; set; }
-            public int Y { get; set; }
-
-            public Point(int x, int y) 
-            {
-                X = x;
-                Y = y;
-            }
-
-            public int SquareMagnitude()
-            {
-                return X * X + Y * Y;
-            }
-
-            public static Point operator- (Point lhs, Point rhs)
-            {
-                return new Point(lhs.X - rhs.X, lhs.Y - rhs.Y);
-            }
-
-            public static Point operator+ (Point lhs, Point rhs)
-            {
-                return new Point(lhs.X + rhs.X, lhs.Y + rhs.Y);
-            }
-
-            public int DiagonalDistanceTo(Point other)
-            {
-                var t = this - other;
-                return Math.Max(Math.Abs(t.X), Math.Abs(t.Y));
-            }
-
-            public static readonly Point Zero = new Point(0, 0);
-        }
-
-        enum CommandType
-        {
-            Accelerate,
-            Detonate,
-            Shoot,
-            Split
-        }
-
-        class Command
-        {
-            public int ShipID { get; set; }
-            public CommandType Type { get; set; }
-            public LispNode Argument { get; set; }
-
-            public static Command Accelerate(int id, Point vec)
-            {
-                return new Command(
-                    CommandType.Accelerate,
-                    id,
-                    new LispNode(
-                        new LispNode(
-                            new LispNode("cons"), 
-                            new LispNode(vec.X)), 
-                        new LispNode(vec.Y)));
-            }
-
-            public static Command Detonate(int id)
-            {
-                return new Command(
-                    CommandType.Detonate,
-                    id);
-            }
-
-            private Command() { }
-
-            private Command(CommandType type, int shipID, LispNode argument = null)
-            {
-                ShipID = shipID;
-                Type = type;
-                Argument = argument;
-            }
-
-            public LispNode ToLispNode()
-            {
-                var ans = Common.Unflatten(new LispNode() { new LispNode((int)Type), new LispNode(ShipID) });
-                if (Argument != null)
-                {
-                    ans[1].Children[1] = 
-                        new LispNode(
-                            new LispNode(new LispNode("cons"), Argument), 
-                            new LispNode("nil"));
-                }
-                
-                return ans;
-            }
-        }
-
-        class GameState
-        {
-            public int Tick { get; set; }
-            public List<Ship> Ships { get; set; }
-
-            public GameState(LispNode node)
-            {
-                Tick = int.Parse(node[0].Text);
-                Ships = node[2].Select(i => new Ship(i[0])).ToList();
-            }
-        }
-
-        enum Role
-        {
-            Attacker,
-            Defender
-        }
-
-        class Ship
-        {
-            public Role Role { get; set; }
-            public int Id { get; set; }
-            public Point Position { get; set; }
-            public Point Velocity { get; set; }
-            public int Life { get; set; }
-            public int Weapon { get; set; }
-            public int Fuel { get; set; }
-            public int Splits { get; set; }
-            public int Energy { get; set; }
-            public int MaxEnergy { get; set; }
-            public bool Alive { get; set; }
-
-            public Ship(LispNode node)
-            {
-                Role = (Role)int.Parse(node[0].Text);
-                Id = int.Parse(node[1].Text);
-                Position = new Point() { X = int.Parse(node[2][0].Text), Y = int.Parse(node[2][1].Text) };
-                Velocity = new Point() { X = int.Parse(node[3][0].Text), Y = int.Parse(node[3][1].Text) };
-                Life = int.Parse(node[4][0].Text);
-                Weapon = int.Parse(node[4][1].Text);
-                Fuel = int.Parse(node[4][2].Text);
-                Splits = int.Parse(node[4][3].Text);
-                Energy = int.Parse(node[5].Text);
-                MaxEnergy = int.Parse(node[6].Text);
-                Alive = node[7].Text != "0";
-            }
-        }
-
-        class StaticGameState
-        {
-            public int MaxTicks { get; set; }
-            public Role Role { get; set; }
-            public int PlanetSize { get; set; }
-            public int UniverseSize { get; set; }
-
-            public StaticGameState(LispNode node)
-            {
-                MaxTicks = int.Parse(node[0].Text);
-                Role = (Role)int.Parse(node[1].Text);
-                PlanetSize = int.Parse(node[3][0].Text);
-                UniverseSize = int.Parse(node[3][1].Text);
-            }
         }
     }
 }
