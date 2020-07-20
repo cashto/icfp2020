@@ -77,10 +77,10 @@ namespace Solver
 
         static Point Scale(Point p, int scale)
         {
-            return new Point(scale * p.SquareMagnitude() / (p.X * p.X), (scale * p.SquareMagnitude()) / (p.Y * p.Y));
+            return new Point((scale * p.X * p.X) / p.SquareMagnitude(), (scale * p.Y * p.Y) / p.SquareMagnitude());
         }
 
-        static LispNode MakeCommandsRequest(string playerKey, LispNode gameResponse)
+        public static LispNode MakeCommandsRequest(string playerKey, LispNode gameResponse)
         {
             var staticGameState = new StaticGameState(gameResponse[2]);
             var gameState = new GameState(gameResponse[3]);
@@ -198,7 +198,7 @@ namespace Solver
             public GameState(LispNode node)
             {
                 Tick = int.Parse(node[0].Text);
-                Ships = node[2].Select(i => new Ship(i)).ToList();
+                Ships = node[2].Select(i => new Ship(i[0])).ToList();
             }
         }
 
@@ -233,8 +233,8 @@ namespace Solver
                 Fuel = int.Parse(node[4][2].Text);
                 Splits = int.Parse(node[4][3].Text);
                 Energy = int.Parse(node[5].Text);
-                MaxEnergy = int.Parse(node[6][0].Text);
-                Alive = node[7][0].Text != "0";
+                MaxEnergy = int.Parse(node[6].Text);
+                Alive = node[7].Text != "0";
             }
         }
 

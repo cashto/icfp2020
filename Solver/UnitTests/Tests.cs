@@ -185,12 +185,8 @@ namespace UnitTests
         [TestMethod]
         public void TestSolver()
         {
-            //var gameResponse = Common.Unflatten(Lisp.Parse("(1 2 () ())"));
-            //gameResponse = Send(serverUrl, MakeStartRequest(playerKey, gameResponse));
-            //while (true)
-            //{
-            //    gameResponse = Send(serverUrl, MakeCommandsRequest(playerKey, gameResponse));
-            //}
+            var gameResponse = Lisp.Parse("(1 1 (256 1 (448 1 64) (16 128) ()) (0 (16 128) (((1 0 (-14 0) (0 0) (10 10 10 1) 0 64 1) ()) ((0 1 (14 0) (0 0) (1 2 1 1) 0 64 1) ()))))")[0];
+            Program.MakeCommandsRequest("123", gameResponse);
         }
 
         private void TestEvaluate(string fn, string reference, Dictionary<string, LispNode> symbols = null)

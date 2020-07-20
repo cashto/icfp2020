@@ -202,6 +202,11 @@ namespace IcfpUtils
                 return node.Text == "nil" ? new LispNode() : node;
             }
 
+            if (node[1].Type == LispNodeType.Token && node[1].Text != "nil")
+            {
+                return new LispNode() { new LispNode(node[0][1].Text), new LispNode(node[1].Text) };
+            }
+
             var ans = new LispNode();
             while (node.Type != LispNodeType.Token)
             {
