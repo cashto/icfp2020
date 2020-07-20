@@ -306,7 +306,7 @@ namespace Solver
             {
                 DefaultLife = 1, // 350 ..
                 DefaultWeapon = 0, // 100 .. 200
-                DefaultRecharge = 40, // 32 .. 48
+                DefaultRecharge = 33, // 32 .. 40
                 DefaultSplit = 1
             },
 
@@ -415,8 +415,16 @@ namespace Solver
             return new Point(x, y);
         }
 
+        static bool InUniverse(Point p, StaticGameState staticGameState)
+        {
+            return false;
+        }
+
         static void Search(GameState gameState, StaticGameState staticGameState, Ship ship)
         {
+            var planetSize = staticGameState.PlanetSize;
+            var universeSize = staticGameState.UniverseSize;
+
             var nodes = Algorithims.Search<GameState, Command>(
                 gameState,
                 new DepthFirstSearch<GameState, Command>(),
@@ -426,7 +434,9 @@ namespace Solver
             var orderedStates =
                 from node in nodes
                 let myShip = GetShip(node.State, ship.Id)
-                where myShip.Velocity.ManhattanDistanceTo(GetDesiredVelocity(myShip, staticGameState.PlanetSize)) < 3
+                where myShip.Velocity.ManhattanDistanceTo(GetDesiredVelocity(myShip, planetSize)) < 3
+                where Math.Abs(myShip.Position.X) > planetSize && Math.Abs(myShip.Position.Y) > planetSize
+                where Math.Abs(myShip.Position.X) < universeSize && Math.Abs(myShip.Position.Y) > universeSize
                 where true /* check planet, world collision */
                 let x = new { node = node, score = 0 } /*compute scores */
                 orderby x.score descending
