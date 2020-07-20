@@ -628,9 +628,10 @@ namespace Solver
 
                 if (staticGameState.Role == Role.Defender &&
                     ship.Splits > 1 &&
-                    gameState.Tick > 8)
+                    gameState.Tick > 8 &&
+                    ship.Life >= 20)
                 {
-                    commands.Add(Command.Split(ship.Id, new LispNode() { new LispNode(1), new LispNode(0), new LispNode(1), new LispNode(1) }));
+                    commands.Add(Command.Split(ship.Id, new LispNode() { new LispNode(10), new LispNode(0), new LispNode(1), new LispNode(1) }));
                 }
             }
 
