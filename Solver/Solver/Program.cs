@@ -47,7 +47,7 @@ namespace Solver
             var result = Common.Flatten(Common.Demodulate(responseString).Item1);
             Console.WriteLine($"Sent [{request}] received [{result}]");
 
-            return Common.Flatten(result);
+            return result;
         }
 
         static LispNode MakeJoinRequest(string playerKey)
@@ -73,13 +73,6 @@ namespace Solver
                         new LispNode("1")
                     }
                 };
-        }
-
-        static Point VectorFromPlanetSurface(Ship ship, StaticGameState staticGameState)
-        {
-            return new Point(
-                ship.Position.X - staticGameState.PlanetSize, 
-                ship.Position.Y - staticGameState.PlanetSize);
         }
 
         static Point Scale(Point p, int scale)
