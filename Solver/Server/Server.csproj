@@ -80,6 +80,7 @@
   <ItemGroup>
     <Compile Include="..\Solver\ParseLisp.cs" />
     <Compile Include="..\Solver\Common.cs" />
+	<None Include="..\..\webroot\main.html" />
     <Compile Include="Server.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -199,7 +199,7 @@ namespace IcfpUtils
         {
             if (node.Type == LispNodeType.Token)
             {
-                return node;
+                return node.Text == "nil" ? new LispNode() : node;
             }
 
             var ans = new LispNode();

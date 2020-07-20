@@ -3,112 +3,216 @@
 <head>
 
 <script>
-var zoom = 3;
-var initialState = [["cons", "0"], [["cons", [["cons", "0"], [["cons", [["cons", "0"], "nil"]], [["cons", "0"], [["cons", "nil"], "nil"]]]]], [["cons", [["cons", [["cons", [["cons", "-1"], "-3"]], [["cons", [["cons", "0"], "-3"]], [["cons", [["cons", "1"], "-3"]], [["cons", [["cons", "2"], "-2"]], [["cons", [["cons", "-2"], "-1"]], [["cons", [["cons", "-1"], "-1"]], [["cons", [["cons", "0"], "-1"]], [["cons", [["cons", "3"], "-1"]], [["cons", [["cons", "-3"], "0"]], [["cons", [["cons", "-1"], "0"]], [["cons", [["cons", "1"], "0"]], [["cons", [["cons", "3"], "0"]], [["cons", [["cons", "-3"], "1"]], [["cons", [["cons", "0"], "1"]], [["cons", [["cons", "1"], "1"]], [["cons", [["cons", "2"], "1"]], [["cons", [["cons", "-2"], "2"]], [["cons", [["cons", "-1"], "3"]], [["cons", [["cons", "0"], "3"]], [["cons", [["cons", "1"], "3"]], "nil"]]]]]]]]]]]]]]]]]]]]], [["cons", [["cons", [["cons", "-7"], "-3"]], [["cons", [["cons", "-8"], "-2"]], "nil"]]], [["cons", "nil"], "nil"]]]], "nil"]]];
+	var zoom = 5;
+	var galaxyState = [["cons","2"],[["cons",[["cons","1"],[["cons","-1"],"nil"]]],[["cons","0"],[["cons","nil"],"nil"]]]];
+	var initialState = [["cons", "0"], [["cons", [["cons", "0"], [["cons", [["cons", "0"], "nil"]], [["cons", "0"], [["cons", "nil"], "nil"]]]]], [["cons", [["cons", [["cons", [["cons", "-1"], "-3"]], [["cons", [["cons", "0"], "-3"]], [["cons", [["cons", "1"], "-3"]], [["cons", [["cons", "2"], "-2"]], [["cons", [["cons", "-2"], "-1"]], [["cons", [["cons", "-1"], "-1"]], [["cons", [["cons", "0"], "-1"]], [["cons", [["cons", "3"], "-1"]], [["cons", [["cons", "-3"], "0"]], [["cons", [["cons", "-1"], "0"]], [["cons", [["cons", "1"], "0"]], [["cons", [["cons", "3"], "0"]], [["cons", [["cons", "-3"], "1"]], [["cons", [["cons", "0"], "1"]], [["cons", [["cons", "1"], "1"]], [["cons", [["cons", "2"], "1"]], [["cons", [["cons", "-2"], "2"]], [["cons", [["cons", "-1"], "3"]], [["cons", [["cons", "0"], "3"]], [["cons", [["cons", "1"], "3"]], "nil"]]]]]]]]]]]]]]]]]]]]], [["cons", [["cons", [["cons", "-7"], "-3"]], [["cons", [["cons", "-8"], "-2"]], "nil"]]], [["cons", "nil"], "nil"]]]], "nil"]]];
+	var tutorialState = [["cons", "5"], [["cons", [["cons", "2"], [["cons", "0"], [["cons", "nil"], [["cons", "nil"], [["cons", "nil"], [["cons", "nil"], [["cons", "nil"], [["cons", "38234"], "nil"]]]]]]]]], [["cons", "8"], [["cons", "nil"], "nil"]]]];
 
-function cdr(x) {
-	return x[0][1];
-}
+	function cdr(x) {
+		return x[0][1];
+	}
 
-function car(x) {
-	return x[1];
-}
+	function car(x) {
+		return x[1];
+	}
 
-function onRequestComplete () {
-	paint(JSON.parse(this.responseText));
-}
+	function onRequestComplete () {
+		paint(JSON.parse(this.responseText));
+	}
 
-function paint(response) {
-	var oStatus = document.getElementById("idStatus");
-	var oState = document.getElementById("idState");
-	var oDebug = document.getElementById("idDebug");
-	var oCanvas = document.getElementById("idCanvas");
-	var canvasContext = oCanvas.getContext("2d");
-	//var colors = ['#ffffff', '#999999', '#0000ff', '#00ff00', '#000099', '#ffff00', '#ff00ff', '#00ffff'];
+	function paint(response) {
+		var oStatus = document.getElementById("idStatus");
+		var oState = document.getElementById("idState");
+		var oDebug = document.getElementById("idDebug");
+		var oCanvas = document.getElementById("idCanvas");
+		var canvasContext = oCanvas.getContext("2d");
 	
-	oStatus.innerHTML = 'Ready';
-	oState.value = JSON.stringify(cdr(car(response)));
-	oDebug.innerHTML = "";
+		var originalState = cdr(car(response));
+		var state = flatten(originalState);
+		var multiDraw = cdr(car(car(response)));
+
+		oStatus.innerHTML = 'Ready';
+		oState.value = JSON.stringify(originalState);
+		oDebug.innerHTML = (state[0] == 6) ? get6DebugText(state) : getRawDebugText(state);
+
+		var screens = listToArray(multiDraw);
 	
-	var multiDraw = cdr(car(car(response)));
-	var screens = listToArray(multiDraw);
+		canvasContext.globalAlpha = 1.0;
+		canvasContext.fillStyle = '#000000';
+		canvasContext.fillRect(0, 0, oCanvas.width, oCanvas.height);
 	
-	canvasContext.globalAlpha = 1.0;
-	canvasContext.fillStyle = '#000000';
-	canvasContext.fillRect(0, 0, oCanvas.width, oCanvas.height);
-	
-	for (var i = 0; i < screens.length; ++i)
-	{
-		canvasContext.globalAlpha = 1.0 - 0.18 * i;
-		var color = (i == 0) ? '#ff9900' : '#ffffff';
-		canvasContext.fillStyle = color;
-		var points = listToArray(screens[i]);
-		oDebug.innerHTML += points.length + " ";
-		for (var j = 0; j < points.length; ++j)
+		for (var i = 0; i < screens.length; ++i)
 		{
-			var x = parseInt(cdr(points[j]));
-			var y = parseInt(car(points[j]));
-			//oDebug.innerHTML += "(" + x + ", " + y + "); ";
-			var scaledx = (oCanvas.width / 2 + x * zoom);
-			var scaledy = (oCanvas.height / 2 + y * zoom);
-			canvasContext.fillRect(scaledx, scaledy, zoom, zoom);
+			canvasContext.globalAlpha = 1.0 - 0.18 * i;
+			var color = (i == 0) ? '#ff9900' : '#ffffff';
+			canvasContext.fillStyle = color;
+			var points = listToArray(screens[i]);
+			for (var j = 0; j < points.length; ++j)
+			{
+				var x = parseInt(cdr(points[j]));
+				var y = parseInt(car(points[j]));
+				var scaledx = (oCanvas.width / 2 + x * zoom);
+				var scaledy = (oCanvas.height / 2 + y * zoom);
+				canvasContext.fillRect(scaledx, scaledy, zoom, zoom);
+			}
 		}
 	}
-}
 
-function listToArray(list)
-{
-	var ans = [];
-	while (list != 'nil')
+	function getRawDebugText(state)
 	{
-		ans.push(cdr(list));
-		list = car(list);
+		var ans = "";
+		for (var i = 0; i < state.length; ++i) {
+			if (i == 1) {
+				ans += "<p style='margin-left:20px'>";
+				for (var j = 0; j < state[i].length; ++j) {
+					ans += JSON.stringify(state[i][j]) + "<br>";
+				}
+				ans += "</p>";
+			} else {
+				ans += JSON.stringify(state[i]) + "<br>";
+			}
+		}
+
+		return ans;
 	}
+
+	function get6DebugText(state)
+	{
+		//gameState: tick, x1, shipsAndCommands
+		//shipsAndCommands: ship, [appliedCommands]
+		//ship: role, shipId, position, velocity, x4, x5, x6, x7
+
+        var gameState = state[1][9];
+        var staticGameState = state[1][10];
+
+        var tick = gameState[0];
+        var x0 = gameState[1];
+        var shipsAndCommands = gameState[2];
+
+        return bold("Tick: ") + tick + "<br>" +
+			bold("x0: ") + JSON.stringify(x0) + "<br>" +
+			bold("Static game state: ") + JSON.stringify(staticGameState) + "<br><br>" +
+            getShipsAndCommandsDebugText(shipsAndCommands);
+	}
+
+    function getShipsAndCommandsDebugText(shipsAndCommands) {
+        var ans = "";
+
+        for (var i = 0; i < shipsAndCommands.length; ++i) {
+            var ship = shipsAndCommands[i][0];
+            var command = shipsAndCommands[i][1];
+            ans += getShipDebugText(ship) + bold("Commands: ") + JSON.stringify(command) + "<br><br>";
+        }
+
+        return ans;
+    }
+
+    function getShipDebugText(ship) {
+        return bold("ShipId: ") + (ship[0] == 0 ? "attacker" : "defender") + ship[1] + "<br>" +
+            bold("Position: ") + JSON.stringify(ship[2]) + "<br>" +
+            bold("Velocity: ") + JSON.stringify(ship[3]) + "<br>" +
+            bold("Stats: ") + "life:" + ship[4][0] + " weapon:" + ship[4][1] + " fuel:" + ship[4][2] + " split:" + ship[4][3] + "<br>" +
+            bold("Energy: ") + (ship[6] - ship[5]) + " / " + ship[6] + "<br>" +
+            bold("Raw: ") + JSON.stringify(ship) + "<br>";
+    }
+
+    function bold(s) {
+        return "<b>" + s + "</b>";
+    }
+
+	function listToArray(list)
+	{
+		var ans = [];
+		while (list != 'nil')
+		{
+			ans.push(cdr(list));
+			list = car(list);
+		}
 	
-	return ans;
-}
+		return ans;
+	}
 
-function onClick()
-{
-	var oState = document.getElementById("idState");
-	var oCanvas = document.getElementById("idCanvas");
-	var canvasRect = oCanvas.getBoundingClientRect();
-	var x = Math.floor((event.x - canvasRect.left - oCanvas.width / 2) / zoom);
-	var y = Math.floor((event.y - canvasRect.top - oCanvas.height / 2) / zoom);
-	send(JSON.parse(oState.value), x, y);
-}
+	function flatten(node)
+	{
+		if (!Array.isArray(node))
+		{
+			return node === "nil" ? [] : parseInt(node);
+        }
 
-function send(state, x, y)
-{
-	var status = document.getElementById("idStatus");
-	status.innerHTML = 'Processing';
+        if (!Array.isArray(node[1]) && node[1] != 'nil') {
+            return [parseInt(node[0][1]), parseInt(node[1])];
+        }
+
+		var ans = [];
+		while (Array.isArray(node))
+		{
+			ans.push(flatten(node[0][1]));
+			node = node[1];
+		}
+
+		return ans;
+	}
+
+	function onClick()
+	{
+		var oState = document.getElementById("idState");
+		var oCanvas = document.getElementById("idCanvas");
+		var canvasRect = oCanvas.getBoundingClientRect();
+		var x = Math.floor((event.x - canvasRect.left - oCanvas.width / 2) / zoom);
+		var y = Math.floor((event.y - canvasRect.top - oCanvas.height / 2) / zoom);
+		send(JSON.parse(oState.value), x, y);
+	}
+
+	function send(state, x, y)
+	{
+		var oStatus = document.getElementById("idStatus");
+		if (oStatus.innerHTML == 'Processing') {
+			return;
+		}
+
+		oStatus.innerHTML = 'Processing';
 	
-	var oReq = new XMLHttpRequest();
-	oReq.addEventListener("load", onRequestComplete);
-	oReq.open("POST", "/api/galaxy");
-	oReq.setRequestHeader("Content-type", "application/json");
-	var body = { state: state, x: x, y: y};
-	oReq.send(JSON.stringify(body));
-}
+		var req = new XMLHttpRequest();
+		req.addEventListener("load", onRequestComplete);
+		req.open("POST", "/api/galaxy");
+		req.setRequestHeader("Content-type", "application/json");
+		var body = { state: state, x: x, y: y};
+		req.send(JSON.stringify(body));
+	}
 
-function onLoad()
-{
-	paint(initialState);
-}
+	function onLoad()
+	{
+		paint(initialState);
+    }
+
+    function updateMousePosition() {
+        var oCanvas = document.getElementById("idCanvas");
+		var oMousePosition = document.getElementById("idMousePosition");
+		var canvasRect = oCanvas.getBoundingClientRect();
+		var x = Math.floor((event.x - canvasRect.left - oCanvas.width / 2) / zoom);
+        var y = Math.floor((event.y - canvasRect.top - oCanvas.height / 2) / zoom);
+		oMousePosition.innerHTML = x + ", " + y
+    }
 </script>
 </head>
 
 <body onload='onLoad()'>
 <table>
 <tr>
-<td>
-<canvas id=idCanvas width=900 height=900 style='border: solid 1px black; align: center' onclick='onClick()'></canvas>
+<td valign="top">
+<canvas id=idCanvas width=900 height=900 style='border: solid 1px black; align: center' onclick='onClick()' onmousemove="updateMousePosition()"></canvas>
 </td>
 
-<td valign=top>
+<td valign=top style="font: normal 14px verdana">
+	<p>
+		<input type="button" value="Start" onclick="send(initialState, 0, 0)" />
+		<input type="button" value="Galaxy" onclick="send(galaxyState, -100, -100)" />
+		<input type="button" value="Tutorial" onclick="send(tutorialState, -100, -100)" />
+		<span id="idMousePosition"></span>
+	</p>
 <p><b>Status:</b> <span id=idStatus></span>
 <p><b>State:</b><br><textarea id=idState cols=120 rows=10></textarea>
-<p><b>Debug:</b> <span id=idDebug></span>
+<br><div id=idDebug></div>
 </td>
 </table>
 </body>

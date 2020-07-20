@@ -43,6 +43,8 @@ namespace IcfpUtils
 
         public IEnumerator<LispNode> GetEnumerator() => Children.GetEnumerator();
 
+        public LispNode this[int index] { get { return Children[index]; } }
+
         public void Add(LispNode node)
         {
             this.Children.Add(node);
