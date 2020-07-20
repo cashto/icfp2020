@@ -306,7 +306,7 @@ namespace Solver
             {
                 DefaultLife = 1, // 350 ..
                 DefaultWeapon = 0, // 100 .. 200
-                DefaultRecharge = 48, // 32 .. 64
+                DefaultRecharge = 40, // 32 .. 48
                 DefaultSplit = 1
             },
 
@@ -417,18 +417,25 @@ namespace Solver
 
         static void Search(GameState gameState, StaticGameState staticGameState, Ship ship)
         {
-            var states = Algorithims.Search<GameState, Command>(
+            var nodes = Algorithims.Search<GameState, Command>(
                 gameState,
                 new DepthFirstSearch<GameState, Command>(),
                 CancellationToken.None,
                 (sn) => GenerateMoves(sn, staticGameState, ship));
 
             var orderedStates =
-                from state in states
+                from node in nodes
+                let myShip = GetShip(node.State, ship.Id)
+                where myShip.Velocity.ManhattanDistanceTo(GetDesiredVelocity(myShip, staticGameState.PlanetSize)) < 3
                 where true /* check planet, world collision */
-                let x = new { state = state, score = 0 } /*compute scores */
+                let x = new { node = node, score = 0 } /*compute scores */
                 orderby x.score descending
-                select x.state;
+                select x.node;
+        }
+
+        static Ship GetShip(GameState gameState, int shipId)
+        {
+            return gameState.Ships.First(s => s.Id == shipId);
         }
 
         static IEnumerable<SearchNode<GameState, Command>> GenerateMoves(
@@ -466,6 +473,16 @@ namespace Solver
             }
         }
 
+        public static Point GetDesiredVelocity(Ship ship, int planetSize)
+        {
+            var gravity = CalculateGravity(ship.Position, planetSize);
+            var desiredVelocity1 = Scale(new Point(ship.Position.Y, -ship.Position.X), 8);
+            var desiredVelocity2 = Scale(new Point(-ship.Position.Y, ship.Position.X), 8);
+            var desiredVelocity = ((ship.Velocity + gravity) - desiredVelocity1).SquareMagnitude() > ((ship.Velocity + gravity) - desiredVelocity2).SquareMagnitude() ?
+                desiredVelocity2 : desiredVelocity1;
+            return desiredVelocity;
+        }
+
         public static List<Command> MakeCommandsRequest(GameState gameState, StaticGameState staticGameState)
         {
             var myShips = gameState.Ships.Where(i => i.Role == staticGameState.Role);
@@ -474,10 +491,7 @@ namespace Solver
             foreach (var ship in myShips)
             {
                 var gravity = CalculateGravity(ship.Position, staticGameState.PlanetSize);
-                var desiredVelocity1 = Scale(new Point(ship.Position.Y, -ship.Position.X), 8);
-                var desiredVelocity2 = Scale(new Point(-ship.Position.Y, ship.Position.X), 8);
-                var desiredVelocity = ((ship.Velocity + gravity) - desiredVelocity1).SquareMagnitude() > ((ship.Velocity + gravity) - desiredVelocity2).SquareMagnitude() ?
-                    desiredVelocity2 : desiredVelocity1;
+                var desiredVelocity = GetDesiredVelocity(ship, staticGameState.PlanetSize);
                 var accelVector = (ship.Velocity + gravity) - desiredVelocity;
                 accelVector.X = Math.Max(accelVector.X, -1);
                 accelVector.X = Math.Min(accelVector.X, 1);
