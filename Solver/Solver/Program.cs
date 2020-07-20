@@ -425,34 +425,45 @@ namespace Solver
 
         static int GetScore(GameState gameState, StaticGameState staticGameState, Ship myShip)
         {
-            var enemyShips = gameState.Ships.Where(s => s.Role != staticGameState.Role).ToList();
+            return FutureStates(staticGameState, gameState).Sum(state =>
+            {
+                var enemyShips = state.Ships.Where(s => s.Role != staticGameState.Role).ToList();
 
-            var distanceMin = enemyShips.Select(s => s.Position.ManhattanDistanceTo(myShip.Position)).Min();
+                var distanceMin = enemyShips.Select(s => s.Position.ManhattanDistanceTo(myShip.Position)).Min();
 
-            return staticGameState.Role == Role.Attacker ? -distanceMin : distanceMin;
+                return staticGameState.Role == Role.Attacker ? -distanceMin : distanceMin;
+            });
         }
 
-        static int CheckAlive(StaticGameState staticGameState, Ship ship)
+        static IEnumerable<GameState> FutureStates (StaticGameState staticGameState, GameState gameState)
         {
-            int max = 12;
-
-            var p = ship.Position;
-            var v = ship.Velocity;
-
             foreach (var i in Enumerable.Range(0, 12))
             {
-                var gravity = CalculateGravity(p, staticGameState.PlanetSize);
-
-                if (!InUniverse(p, staticGameState))
+                gameState = new GameState()
                 {
-                    return i;
-                }
+                    Ships = (
+                        from s in gameState.Ships
+                        let gravity = CalculateGravity(s.Position, staticGameState.PlanetSize)
+                        let delta = Point.Zero
+                        select new Ship()
+                        {
+                            Id = s.Id,
+                            Role = s.Role,
+                            Energy = Common.Bound(s.Energy - s.Recharge, 0, 64),
+                            Position = s.Position + s.Velocity + gravity - delta,
+                            Velocity = s.Velocity + gravity - delta,
+                            Life = s.Life - (delta.SquareMagnitude() == 0 ? 0 : 1)
+                        }).ToList()
+                };
 
-                v = v + gravity;
-                p = p + v;
+                yield return gameState;
             }
+        }
 
-            return max;
+        static bool ImStillInUniverse(GameState gameState, StaticGameState staticGameState, int shipId)
+        {
+            var myShip = GetShip(gameState, shipId);
+            return InUniverse(myShip.Position, staticGameState);
         }
 
         static Command Search(GameState originalGameState, StaticGameState staticGameState, Ship ship)
@@ -473,7 +484,7 @@ namespace Solver
                 where node.Depth == 4
                 let myShip = GetShip(node.State, ship.Id)
                 where InUniverse(myShip.Position, staticGameState)
-                let alive = CheckAlive(staticGameState, myShip)
+                let alive = FutureStates(staticGameState, node.State).Count(state => ImStillInUniverse(state, staticGameState, ship.Id))
                 let score = GetScore(node.State, staticGameState, myShip)
                 orderby alive descending, score descending
                 select node;
@@ -525,8 +536,8 @@ namespace Solver
                                 Id = s.Id,
                                 Role = s.Role,
                                 Energy = Common.Bound(s.Energy - s.Recharge, 0, 64),
-                                Position = s.Position - delta + gravity,
-                                Velocity = s.Velocity + gravity,
+                                Position = s.Position + s.Velocity + gravity - delta ,
+                                Velocity = s.Velocity + gravity - delta,
                                 Life = s.Life - (delta.SquareMagnitude() == 0 ? 0 : 1)
                             }).ToList()
                     };
