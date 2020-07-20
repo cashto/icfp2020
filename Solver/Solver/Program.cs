@@ -304,8 +304,8 @@ namespace Solver
         static readonly List<StaticGameState> StartRequests = new List<StaticGameState>() {
             new StaticGameState()
             {
-                DefaultLife = 0, // 350 ..
-                DefaultWeapon = 125, // 100 .. 150
+                DefaultLife = 500, // 350 ..
+                DefaultWeapon = 0, // 100 .. 125
                 DefaultRecharge = 0, // 33 .. 40
                 DefaultSplit = 1
             },
@@ -443,6 +443,9 @@ namespace Solver
                 select x.node;
 
             var theNode = orderedNodes.First();
+            Console.WriteLine("Moves: " + string.Join("; ", theNode.Moves.Select(move => move.Vector)));
+            Console.WriteLine("Positions: " + string.Join("; ", theNode.States.Select(state => GetShip(state, ship.Id).Position)));
+            Console.WriteLine("Velocities: " + string.Join("; ", theNode.States.Select(state => GetShip(state, ship.Id).Velocity)));
 
             return theNode.Move;
         }
@@ -458,6 +461,12 @@ namespace Solver
             Ship ship)
         {
             if (searchNode.Depth > 3)
+            {
+                yield break;
+            }
+
+            var myShip = GetShip(searchNode.State, ship.Id);
+            if (!InUniverse(myShip.Position, staticGameState))
             {
                 yield break;
             }

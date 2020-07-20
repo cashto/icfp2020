@@ -233,6 +233,17 @@ namespace IcfpUtils
 			}
 		}
 
+		public IEnumerable<S> States
+		{
+			get
+			{
+				return GetReverseSearchNodes()
+					.Reverse()
+					.Skip(1)
+					.Select(i => i.State);
+			}
+		}
+
 		private IEnumerable<SearchNode<S, M>> GetReverseSearchNodes()
 		{
 			var node = this;
