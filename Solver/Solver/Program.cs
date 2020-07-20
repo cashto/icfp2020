@@ -36,7 +36,7 @@ namespace Solver
             }
             
             using var httpClient = new HttpClient { BaseAddress = serverUri };
-            var requestContent = new StringContent(Common.Modulate(Common.Unflatten(request)), Encoding.UTF8, MediaTypeNames.Text.Plain);
+            var requestContent = new StringContent(Common.Modulate(request), Encoding.UTF8, MediaTypeNames.Text.Plain);
             using var response = httpClient.PostAsync("", requestContent).Result;
             if (!response.IsSuccessStatusCode)
             {
@@ -45,45 +45,69 @@ namespace Solver
 
             var responseString = response.Content.ReadAsStringAsync().Result;
             var result = Common.Flatten(Common.Demodulate(responseString).Item1);
-            Console.WriteLine($"Sent [{request}] received [{result}]");
+            Console.WriteLine($"Sent [{Common.Flatten(request)}] received [{result}]");
 
             return result;
         }
 
         static LispNode MakeJoinRequest(string playerKey)
         {
-            return 
-                new LispNode() { 
-                    new LispNode("2"), 
-                    new LispNode(playerKey), 
-                    new LispNode() 
-                };
+            return
+                Common.Unflatten(
+                    new LispNode() { 
+                        new LispNode("2"), 
+                        new LispNode(playerKey), 
+                        new LispNode() 
+                    });
         }
 
         static LispNode MakeStartRequest(string playerKey, LispNode gameResponse)
         {
             return 
-                new LispNode() { 
-                    new LispNode("3"), 
-                    new LispNode(playerKey), 
-                    new LispNode() {
-                        new LispNode("10"),
-                        new LispNode("10"),
-                        new LispNode("10"),
-                        new LispNode("1")
-                    }
-                };
+                Common.Unflatten(
+                    new LispNode() { 
+                        new LispNode("3"), 
+                        new LispNode(playerKey), 
+                        new LispNode() {
+                            new LispNode("10"),
+                            new LispNode("10"),
+                            new LispNode("10"),
+                            new LispNode("1")
+                        }
+                    });
         }
 
         static Point Scale(Point p, int scale)
         {
-            return new Point((scale * p.X * p.X) / p.SquareMagnitude(), (scale * p.Y * p.Y) / p.SquareMagnitude());
+            var mag = Math.Sqrt(p.SquareMagnitude());
+            return new Point((int)(scale * p.X / mag), (int)(scale * p.Y / mag));
         }
 
         public static LispNode MakeCommandsRequest(string playerKey, LispNode gameResponse)
         {
-            var staticGameState = new StaticGameState(gameResponse[2]);
-            var gameState = new GameState(gameResponse[3]);
+            var commands = MakeCommandsRequest(
+                new GameState(gameResponse[3]), 
+                new StaticGameState(gameResponse[2]));
+
+            var ans = Common.Unflatten(
+                new LispNode() {
+                    new LispNode("4"),
+                    new LispNode(playerKey) });
+
+            var commandsList = new LispNode("nil");
+            foreach (var command in commands)
+            {
+                commandsList = new LispNode(
+                    new LispNode(new LispNode("cons"), command.ToLispNode()),
+                    commandsList);
+            }
+
+            ans[1].Children[1] = commandsList;
+            return ans;
+        }
+
+        static List<Command> MakeCommandsRequest(GameState gameState, StaticGameState staticGameState)
+        {
             var myShips = gameState.Ships.Where(i => i.Role == staticGameState.Role);
             var theirShips = gameState.Ships.Where(i => i.Role != staticGameState.Role);
             var commands = new List<Command>();
@@ -91,7 +115,7 @@ namespace Solver
             {
                 var desiredVelocity1 = Scale(new Point(-ship.Position.Y, ship.Position.X), 4);
                 var desiredVelocity2 = Scale(new Point(ship.Position.Y, -ship.Position.X), 4);
-                var desiredVelocity = (ship.Velocity - desiredVelocity1).SquareMagnitude() > (ship.Velocity - desiredVelocity2).SquareMagnitude() ? 
+                var desiredVelocity = (ship.Velocity - desiredVelocity1).SquareMagnitude() > (ship.Velocity - desiredVelocity2).SquareMagnitude() ?
                     desiredVelocity2 : desiredVelocity1;
                 var accelVector = ship.Velocity - desiredVelocity;
                 accelVector.X = Math.Max(accelVector.X, -1);
@@ -99,27 +123,16 @@ namespace Solver
                 accelVector.Y = Math.Max(accelVector.Y, -1);
                 accelVector.Y = Math.Min(accelVector.Y, 1);
 
-                commands.Add(new Command(CommandType.Accelerate, ship.Id, new LispNode() { new LispNode(accelVector.X), new LispNode(accelVector.Y) }));
+                commands.Add(Command.Accelerate(ship.Id, accelVector));
 
-                if (staticGameState.Role == Role.Attacker && 
+                if (staticGameState.Role == Role.Attacker &&
                     theirShips.Any(theirShip => (ship.Position + ship.Velocity).DiagonalDistanceTo(theirShip.Position + theirShip.Velocity) < 5))
                 {
-                    commands.Add(new Command(CommandType.Detonate, ship.Id));
+                    commands.Add(Command.Detonate(ship.Id));
                 }
             }
 
-            var result = new LispNode();
-            foreach (var command in commands)
-            {
-                result.Add(command.ToLispNode());
-            }
-
-            return
-                new LispNode() {
-                    new LispNode("4"),
-                    new LispNode(playerKey),
-                    result
-                };
+            return commands;
         }
 
         struct Point
@@ -140,12 +153,12 @@ namespace Solver
 
             public static Point operator- (Point lhs, Point rhs)
             {
-                return new Point(lhs.X - rhs.X, lhs.X - rhs.X);
+                return new Point(lhs.X - rhs.X, lhs.Y - rhs.Y);
             }
 
             public static Point operator+ (Point lhs, Point rhs)
             {
-                return new Point(lhs.X + rhs.X, lhs.X + rhs.X);
+                return new Point(lhs.X + rhs.X, lhs.Y + rhs.Y);
             }
 
             public int DiagonalDistanceTo(Point other)
@@ -169,21 +182,45 @@ namespace Solver
         {
             public int ShipID { get; set; }
             public CommandType Type { get; set; }
-            public LispNode Arguments { get; set; }
+            public LispNode Argument { get; set; }
 
-            public Command(CommandType type, int shipID, LispNode args = null)
+            public static Command Accelerate(int id, Point vec)
+            {
+                return new Command(
+                    CommandType.Accelerate,
+                    id,
+                    new LispNode(
+                        new LispNode(
+                            new LispNode("cons"), 
+                            new LispNode(vec.X)), 
+                        new LispNode(vec.Y)));
+            }
+
+            public static Command Detonate(int id)
+            {
+                return new Command(
+                    CommandType.Detonate,
+                    id);
+            }
+
+            private Command() { }
+
+            private Command(CommandType type, int shipID, LispNode argument = null)
             {
                 ShipID = shipID;
                 Type = type;
-                Arguments = args;
+                Argument = argument;
             }
 
             public LispNode ToLispNode()
             {
-                var ans  = new LispNode() { new LispNode((int)Type), new LispNode(ShipID) };
-                if (Arguments != null)
+                var ans = Common.Unflatten(new LispNode() { new LispNode((int)Type), new LispNode(ShipID) });
+                if (Argument != null)
                 {
-                    ans.Add(Arguments);
+                    ans[1].Children[1] = 
+                        new LispNode(
+                            new LispNode(new LispNode("cons"), Argument), 
+                            new LispNode("nil"));
                 }
                 
                 return ans;

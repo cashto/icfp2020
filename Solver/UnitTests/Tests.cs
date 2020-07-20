@@ -186,7 +186,8 @@ namespace UnitTests
         public void TestSolver()
         {
             var gameResponse = Lisp.Parse("(1 1 (256 1 (448 1 64) (16 128) ()) (0 (16 128) (((1 0 (-14 0) (0 0) (10 10 10 1) 0 64 1) ()) ((0 1 (14 0) (0 0) (1 2 1 1) 0 64 1) ()))))")[0];
-            Program.MakeCommandsRequest("123", gameResponse);
+            var response = Program.MakeCommandsRequest("123", gameResponse);
+            Console.WriteLine(Common.Flatten(response));
         }
 
         private void TestEvaluate(string fn, string reference, Dictionary<string, LispNode> symbols = null)
