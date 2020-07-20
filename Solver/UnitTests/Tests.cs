@@ -185,10 +185,10 @@ namespace UnitTests
         [TestMethod]
         public void TestSolver()
         {
-            //var gameResponse = Lisp.Parse("(1 1 (256 1 (448 1 64) (16 128) ()) (0 (16 128) (((1 0 (-14 0) (0 0) (10 10 10 1) 0 64 1) ()) ((0 1 (14 0) (0 0) (1 2 1 1) 0 64 1) ()))))");
-            var gameResponse = Lisp.Parse("(1 2 () ())");
-            //var response = Program.MakeCommandsRequest("123", gameResponse[0]);
-            var response = Program.MakeStartRequest("123", gameResponse[0]);
+            var gameResponse = Lisp.Parse("(1 1 (256 0 (512 1 64) (16 128) (350 0 8 1)) (0 (16 128) (((1 0 (-48 44) (0 0) (350 0 8 1) 0 64 1) ()) ((0 1 (48 -44) (0 0) (0 16 16 1) 0 64 1) ()))))");
+            //var gameResponse = Lisp.Parse("(1 2 () ())");
+            var response = Program.MakeCommandsRequest("123", gameResponse[0]);
+            //var response = Program.MakeStartRequest("123", gameResponse[0]);
             Console.WriteLine(Common.Flatten(response));
         }
 
