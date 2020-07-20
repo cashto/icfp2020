@@ -6,6 +6,8 @@ using System.Runtime.InteropServices;
 using System.ComponentModel.DataAnnotations;
 using System;
 using System.Linq;
+using System.Net.Mail;
+using System.Threading.Tasks;
 
 namespace UnitTests
 {
@@ -204,6 +206,29 @@ namespace UnitTests
 
             Assert.AreEqual(commands[0].Vector.X, -1);
             Assert.AreEqual(commands[0].Vector.Y, 1);
+        }
+
+        [TestMethod]
+        public async Task TestDefaultStartingParams()
+        {
+            var startingParams = new LispNode()
+            {
+                new LispNode(1),
+                new LispNode(0),
+                new LispNode(0),
+                new LispNode(1),
+            };
+
+            var create = Common.Flatten(await Common.Send(Common.Unflatten(Lisp.Parse("(1 6)")[0])));
+            var playerKey = create[1][0][1];
+            
+            var tasks = new List<Task<LispNode>>();
+            tasks.Add(Common.Send(Common.Unflatten(new LispNode() { new LispNode(2), create[1][0][1], new LispNode() })));
+            //tasks.Add(Common.Send(Common.Unflatten(new LispNode() { new LispNode(2), playerKey, new LispNode() })));
+            Task.WaitAll(tasks.ToArray());
+
+            var join = Common.Flatten(tasks[0].Result);
+            var start = Common.Flatten(await Common.Send(Common.Unflatten(new LispNode() { new LispNode(3), playerKey, startingParams })));
         }
 
         private void TestEvaluate(string fn, string reference, Dictionary<string, LispNode> symbols = null)

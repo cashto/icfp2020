@@ -49,22 +49,22 @@ namespace IcfpUtils
             throw new Exception($"Could not parse: {s}");
         }
 
-        public static LispNode Send(LispNode content)
+        public static async Task<LispNode> Send(LispNode content)
         {
             try
             {
                 var apiKey = "f6bc77050a4b4d2995b3f51b50155cdd";
 
                 var httpClient = new HttpClient();
-                var result = httpClient.SendAsync(
+                var result = await httpClient.SendAsync(
                     new HttpRequestMessage(
                         HttpMethod.Post,
                         $"https://icfpc2020-api.testkontur.ru/aliens/send?apiKey={apiKey}")
                     {
                         Content = new StringContent(Modulate(content))
-                    }).Result;
+                    });
 
-                var response = Demodulate(result.Content.ReadAsStringAsync().Result).Item1;
+                var response = Demodulate(await result.Content.ReadAsStringAsync()).Item1;
                 Console.WriteLine($"  -> got {response}");
                 Console.WriteLine($"Sent [{Common.Flatten(content)}], received [{Common.Flatten(response)}]");
 

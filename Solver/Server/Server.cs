@@ -73,7 +73,7 @@ namespace Server
 
                 state = result.Children.Last().Children.First().Children.Last();
                 var data = result.Children.Last().Children.Last().Children.First().Children.Last();
-                vector = Common.Send(data);
+                vector = Common.Send(data).Result;
             }
         }
 

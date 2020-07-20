@@ -258,9 +258,9 @@ namespace Solver
             return node[0].Text == "1";
         }
 
-        static LispNode Send(string serverUrl, LispNode request)
+        public static LispNode Send(string serverUrl, LispNode request, string queryParams = null)
         {
-            if (!Uri.TryCreate(serverUrl + "/aliens/send", UriKind.Absolute, out var serverUri))
+            if (!Uri.TryCreate(serverUrl + "/aliens/send" + (queryParams ?? ""), UriKind.Absolute, out var serverUri))
             {
                 throw new Exception($"Failed to parse ServerUrl {serverUrl}");
             }
@@ -296,9 +296,9 @@ namespace Solver
         static readonly List<StaticGameState> StartRequests = new List<StaticGameState>() {
             new StaticGameState()
             {
-                DefaultLife = 350,
+                DefaultLife = 1,
                 DefaultWeapon = 100,
-                DefaultRecharge = 8,
+                DefaultRecharge = 0,
                 DefaultSplit = 1
             },
 
