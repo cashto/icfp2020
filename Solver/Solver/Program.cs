@@ -299,8 +299,8 @@ namespace Solver
             new StaticGameState()
             {
                 DefaultLife = 1,
-                DefaultWeapon = 200,
-                DefaultRecharge = 0,
+                DefaultWeapon = 0, // 100 .. 200
+                DefaultRecharge = 16,
                 DefaultSplit = 1
             },
 
@@ -409,18 +409,30 @@ namespace Solver
             return new Point(x, y);
         }
 
-        static void Search(GameState gameState)
+        static void Search(GameState gameState, Ship ship)
         {
             Algorithims.Search<GameState, Command>(
                 gameState,
                 new DepthFirstSearch<GameState, Command>(),
                 CancellationToken.None,
-                GenerateMoves);
+                (sn) => GenerateMoves(sn, ship));
         }
 
-        static IEnumerable<SearchNode<GameState, Command>> GenerateMoves(SearchNode<GameState, Command> searchNode)
+        static IEnumerable<SearchNode<GameState, Command>> GenerateMoves(SearchNode<GameState, Command> searchNode, Ship ship)
         {
-            return null;
+            foreach (var x in Enumerable.Range(-1, 3))
+            {
+                foreach (var y in Enumerable.Range(-1, 3))
+                {
+                    var command = Command.Accelerate(ship.Id, new Point(x, y));
+                    var newState = new GameState()
+                    {
+                        Ships = searchNode.State.Ships.Select(s => ship.
+                    };
+
+                    yield return command;
+                }
+            }
         }
 
         public static List<Command> MakeCommandsRequest(GameState gameState, StaticGameState staticGameState)
