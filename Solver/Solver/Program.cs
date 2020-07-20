@@ -320,7 +320,7 @@ namespace Solver
 
         public static LispNode MakeStartRequest(string playerKey, LispNode gameResponse)
         {
-            var staticGameState = StartRequests[StartRequestsIndex++];
+            var staticGameState = StartRequests[StartRequestIndex++];
 
             return 
                 Common.Unflatten(
