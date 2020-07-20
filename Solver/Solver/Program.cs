@@ -305,7 +305,7 @@ namespace Solver
             new StaticGameState()
             {
                 DefaultLife = 0, // 350 ..
-                DefaultWeapon = 150, // 100 .. 200
+                DefaultWeapon = 125, // 100 .. 150
                 DefaultRecharge = 0, // 33 .. 40
                 DefaultSplit = 1
             },
@@ -422,7 +422,7 @@ namespace Solver
                 Math.Abs(p.X) < staticGameState.UniverseSize && Math.Abs(p.Y) < staticGameState.UniverseSize;
         }
 
-        static void Search(GameState gameState, StaticGameState staticGameState, Ship ship)
+        static Command Search(GameState gameState, StaticGameState staticGameState, Ship ship)
         {
             var planetSize = staticGameState.PlanetSize;
             var universeSize = staticGameState.UniverseSize;
@@ -433,7 +433,7 @@ namespace Solver
                 CancellationToken.None,
                 (sn) => GenerateMoves(sn, staticGameState, ship));
 
-            var orderedStates =
+            var orderedNodes =
                 from node in nodes
                 let myShip = GetShip(node.State, ship.Id)
                 where myShip.Velocity.ManhattanDistanceTo(GetDesiredVelocity(myShip, planetSize)) < 3
@@ -441,6 +441,10 @@ namespace Solver
                 let x = new { node = node, score = 0 } /*compute scores */
                 orderby x.score descending
                 select x.node;
+
+            var theNode = orderedNodes.First();
+
+            return theNode.Move;
         }
 
         static Ship GetShip(GameState gameState, int shipId)
