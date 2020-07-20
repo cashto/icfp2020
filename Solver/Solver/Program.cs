@@ -287,9 +287,9 @@ namespace Solver
         static readonly List<StaticGameState> StartRequests = new List<StaticGameState>() {
             new StaticGameState()
             {
-                DefaultLife = 350,
-                DefaultWeapon = 16,
-                DefaultRecharge = 24,
+                DefaultLife = 128,
+                DefaultWeapon = 8,
+                DefaultRecharge = 8,
                 DefaultSplit = 1
             },
 
