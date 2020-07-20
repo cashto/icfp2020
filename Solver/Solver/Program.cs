@@ -237,7 +237,7 @@ namespace Solver
             {
                 gameResponse = Send(serverUrl, MakeStartRequest(playerKey, gameResponse));
             } while (!IsSuccess(gameResponse));
-            
+
             while (true)
             {
                 gameResponse = Send(serverUrl, MakeCommandsRequest(playerKey, gameResponse));
@@ -255,7 +255,7 @@ namespace Solver
             {
                 throw new Exception($"Failed to parse ServerUrl {serverUrl}");
             }
-            
+
             using var httpClient = new HttpClient { BaseAddress = serverUri };
             var requestContent = new StringContent(Common.Modulate(request), Encoding.UTF8, MediaTypeNames.Text.Plain);
             using var response = httpClient.PostAsync("", requestContent).Result;
@@ -266,7 +266,8 @@ namespace Solver
 
             var responseString = response.Content.ReadAsStringAsync().Result;
             var result = Common.Flatten(Common.Demodulate(responseString).Item1);
-            Console.WriteLine($"Sent {Common.Flatten(request)}] received [{result}] -- [{request}]");
+            Console.WriteLine($"Sent {Common.Flatten(request)}] received [{result}]]");
+            //Console.WriteLine($"Sent {Common.Flatten(request)}] received [{result}] -- [{request}]");
 
             return result;
         }
@@ -275,25 +276,51 @@ namespace Solver
         {
             return
                 Common.Unflatten(
-                    new LispNode() { 
-                        new LispNode("2"), 
-                        new LispNode(playerKey), 
-                        new LispNode() 
+                    new LispNode() {
+                        new LispNode("2"),
+                        new LispNode(playerKey),
+                        new LispNode()
                     });
         }
 
-        static StaticGameState LastStaticGameState = null;
+        static int StartRequestIndex = 0;
+        static readonly List<StaticGameState> StartRequests = new List<StaticGameState>() {
+            new StaticGameState()
+            {
+                DefaultLife = 350,
+                DefaultWeapon = 16,
+                DefaultRecharge = 24,
+                DefaultSplit = 1
+            },
+
+            new StaticGameState()
+            {
+                DefaultLife = 350,
+                DefaultWeapon = 0,
+                DefaultRecharge = 8,
+                DefaultSplit = 1
+            },
+
+            new StaticGameState()
+            {
+                DefaultLife = 10,
+                DefaultWeapon = 10,
+                DefaultRecharge = 10,
+                DefaultSplit = 1
+            },
+
+            new StaticGameState()
+            {
+                DefaultLife = 1,
+                DefaultWeapon = 0,
+                DefaultRecharge = 0,
+                DefaultSplit = 1
+            },
+        };
 
         public static LispNode MakeStartRequest(string playerKey, LispNode gameResponse)
         {
-            var staticGameState = 
-                IsSuccess(gameResponse) ? new StaticGameState(gameResponse[2]) :
-                LastStaticGameState != null ? LastStaticGameState :
-                new StaticGameState();
-
-            LastStaticGameState = staticGameState;
-
-            int extraFactor = IsSuccess(gameResponse) ? 1 : 0;
+            var staticGameState = StartRequests[StartRequestsIndex++];
 
             return 
                 Common.Unflatten(
@@ -302,8 +329,8 @@ namespace Solver
                         new LispNode(playerKey), 
                         new LispNode() {
                             new LispNode(staticGameState.DefaultLife),
-                            new LispNode(staticGameState.DefaultWeapon + 16 * extraFactor),
-                            new LispNode(staticGameState.DefaultRecharge + 16 * extraFactor),
+                            new LispNode(staticGameState.DefaultWeapon),
+                            new LispNode(staticGameState.DefaultRecharge),
                             new LispNode(staticGameState.DefaultSplit)
                         }
                     });
