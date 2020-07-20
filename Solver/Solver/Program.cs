@@ -168,14 +168,31 @@ namespace Solver
 
         public StaticGameState(LispNode node)
         {
+            PlanetSize = 5;
+            UniverseSize = 64;
+            DefaultSplit = 1;
+
+            if (node.Count() < 4)
+            {
+                return;
+            }
+
             MaxTicks = int.Parse(node[0].Text);
             Role = (Role)int.Parse(node[1].Text);
-            PlanetSize = int.Parse(node[3][0].Text);
-            UniverseSize = int.Parse(node[3][1].Text);
-            DefaultLife = int.Parse(node[4][0].Text);
-            DefaultWeapon = int.Parse(node[4][1].Text);
-            DefaultRecharge = int.Parse(node[4][2].Text);
-            DefaultSplit = int.Parse(node[4][3].Text);
+
+            if (node[3].Count() >= 2)
+            {
+                PlanetSize = int.Parse(node[3][0].Text);
+                UniverseSize = int.Parse(node[3][1].Text);
+            }
+
+            if (node[4].Count() >= 4)
+            {
+                DefaultLife = int.Parse(node[4][0].Text);
+                DefaultWeapon = int.Parse(node[4][1].Text);
+                DefaultRecharge = int.Parse(node[4][2].Text);
+                DefaultSplit = int.Parse(node[4][3].Text);
+            }
         }
     }
 
@@ -229,10 +246,7 @@ namespace Solver
 
         public static LispNode MakeStartRequest(string playerKey, LispNode gameResponse)
         {
-            var staticGameState =
-                gameResponse[2].Count() == 0 || gameResponse[3].Count() == 0 ?
-                new StaticGameState() { DefaultSplit = 1 } :
-                new StaticGameState(gameResponse[2]);
+            var staticGameState = new StaticGameState(gameResponse[2]);
 
             return 
                 Common.Unflatten(
