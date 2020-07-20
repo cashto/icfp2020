@@ -311,7 +311,23 @@ namespace Solver
 
             new StaticGameState()
             {
+                DefaultLife = 0,
+                DefaultWeapon = 16,
+                DefaultRecharge = 16,
+                DefaultSplit = 1
+            },
+
+            new StaticGameState()
+            {
                 DefaultLife = 1,
+                DefaultWeapon = 0,
+                DefaultRecharge = 0,
+                DefaultSplit = 1
+            },
+
+            new StaticGameState()
+            {
+                DefaultLife = 0,
                 DefaultWeapon = 0,
                 DefaultRecharge = 0,
                 DefaultSplit = 1
