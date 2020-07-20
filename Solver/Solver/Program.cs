@@ -403,17 +403,22 @@ namespace Solver
 
         static Point CalculateGravity(Point ship, int planetSize)
         {
-            var x =
-                ship.X < -planetSize ? 1 :
-                ship.X < planetSize ? 0 :
-                -1;
-
-            var y =
-                ship.Y < -planetSize ? 1 :
-                ship.Y < planetSize ? 0 :
-                -1;
-
-            return new Point(x, y);
+            if (ship.X < ship.Y && ship.X > -ship.Y)
+            {
+                return new Point(-1, 0);
+            }
+            else if (ship.X > ship.Y && ship.X < -ship.Y)
+            {
+                return new Point(1, 0);
+            }
+            else if (ship.Y > 0)
+            {
+                return new Point(0, -1);
+            }
+            else
+            {
+                return new Point(0, 1);
+            }
         }
 
         static bool InUniverse(Point p, StaticGameState staticGameState)
@@ -482,7 +487,7 @@ namespace Solver
 
             var orderedNodes =
                 from node in nodes
-                where node.Depth == 4
+                where node.Depth == 3
                 let myShip = GetShip(node.State, ship.Id)
                 where InUniverse(myShip.Position, staticGameState)
                 let alive = FutureStates(staticGameState, node.State).Count(state => ImStillInUniverse(state, staticGameState, ship.Id))
@@ -510,7 +515,7 @@ namespace Solver
             StaticGameState staticGameState,
             Ship ship)
         {
-            if (searchNode.Depth >= 4)
+            if (searchNode.Depth >= 3)
             {
                 yield break;
             }
