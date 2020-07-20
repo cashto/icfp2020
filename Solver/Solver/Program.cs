@@ -449,9 +449,9 @@ namespace Solver
             });
         }
 
-        static IEnumerable<GameState> FutureStates (StaticGameState staticGameState, GameState gameState)
+        static IEnumerable<GameState> FutureStates (StaticGameState staticGameState, GameState gameState, int max = 12)
         {
-            foreach (var i in Enumerable.Range(0, 12))
+            foreach (var i in Enumerable.Range(0, max))
             {
                 gameState = new GameState()
                 {
@@ -628,7 +628,7 @@ namespace Solver
 
                 if (staticGameState.Role == Role.Defender &&
                     ship.Splits > 1 &&
-                    ship.Velocity.ManhattanDistanceTo(desiredVelocity) <= 2 &&
+                    FutureStates(staticGameState, gameState, 32).All(state => ImStillInUniverse(state, staticGameState, ship.Id)) &&
                     ship.Life >= 20)
                 {
                     commands.Add(Command.Split(ship.Id, new LispNode() { new LispNode(10), new LispNode(0), new LispNode(1), new LispNode(1) }));
