@@ -40,7 +40,7 @@ namespace Solver
             return Math.Max(Math.Abs(t.X), Math.Abs(t.Y));
         }
 
-        public int ManhattanlDistanceTo(Point other)
+        public int ManhattanDistanceTo(Point other)
         {
             var t = this - other;
             return Math.Abs(t.X) + Math.Abs(t.Y);
@@ -61,7 +61,8 @@ namespace Solver
     {
         public int ShipID { get; set; }
         public CommandType Type { get; set; }
-        public LispNode Argument { get; set; }
+        public LispNode Argument1 { get; set; }
+        public LispNode Argument2 { get; set; }
 
         public static Command Accelerate(int id, Point vec)
         {
@@ -82,23 +83,46 @@ namespace Solver
                 id);
         }
 
+        public static Command Shoot(int id, Point target, int power)
+        {
+            return new Command(
+                CommandType.Shoot,
+                id,
+                new LispNode(
+                    new LispNode(
+                        new LispNode("cons"),
+                        new LispNode(target.X)),
+                    new LispNode(target.Y)),
+                new LispNode(power));
+        }
+
         private Command() { }
 
-        private Command(CommandType type, int shipID, LispNode argument = null)
+        private Command(CommandType type, int shipID, LispNode argument1 = null, LispNode argument2 = null)
         {
             ShipID = shipID;
             Type = type;
-            Argument = argument;
+            Argument1 = argument1;
+            Argument2 = argument2;
         }
 
         public LispNode ToLispNode()
         {
             var ans = Common.Unflatten(new LispNode() { new LispNode((int)Type), new LispNode(ShipID) });
-            if (Argument != null)
+            
+            if (Argument1 != null)
             {
                 ans[1].Children[1] =
                     new LispNode(
-                        new LispNode(new LispNode("cons"), Argument),
+                        new LispNode(new LispNode("cons"), Argument1),
+                        new LispNode("nil"));
+            }
+
+            if (Argument2 != null)
+            {
+                ans[1].Children[1].Children[1] =
+                    new LispNode(
+                        new LispNode(new LispNode("cons"), Argument2),
                         new LispNode("nil"));
             }
 
@@ -258,9 +282,17 @@ namespace Solver
                     });
         }
 
+        static StaticGameState LastStaticGameState = null;
+
         public static LispNode MakeStartRequest(string playerKey, LispNode gameResponse)
         {
-            var staticGameState = IsSuccess(gameResponse) ? new StaticGameState(gameResponse[2]) : new StaticGameState();
+            var staticGameState = 
+                IsSuccess(gameResponse) ? new StaticGameState(gameResponse[2]) :
+                LastStaticGameState != null ? LastStaticGameState :
+                new StaticGameState();
+
+            LastStaticGameState = staticGameState;
+
             int extraFactor = IsSuccess(gameResponse) ? 1 : 0;
 
             return 
@@ -311,7 +343,7 @@ namespace Solver
         static List<Command> MakeCommandsRequest(GameState gameState, StaticGameState staticGameState)
         {
             var myShips = gameState.Ships.Where(i => i.Role == staticGameState.Role);
-            var theirShips = gameState.Ships.Where(i => i.Role != staticGameState.Role);
+            var enemyShips = gameState.Ships.Where(i => i.Role != staticGameState.Role).ToList();
             var commands = new List<Command>();
             foreach (var ship in myShips)
             {
@@ -325,21 +357,34 @@ namespace Solver
                 accelVector.Y = Math.Max(accelVector.Y, -1);
                 accelVector.Y = Math.Min(accelVector.Y, 1);
 
-                var energyUsed = 0;
-                if (accelVector.X != 0 && accelVector.Y != 0 && ship.EnergyLeft >= 8 && ship.Life > 0)
+                var energyLeft = ship.MaxEnergy - ship.Energy;
+                if (accelVector.X != 0 && accelVector.Y != 0 && energyLeft >= 8 && ship.Life > 0)
                 {
                     commands.Add(Command.Accelerate(ship.Id, accelVector));
-                    energyUsed += 8;
+                    energyLeft -= 8;
                 }
 
                 if (staticGameState.Role == Role.Attacker &&
-                    theirShips.Any(theirShip => (ship.Position + ship.Velocity).DiagonalDistanceTo(theirShip.Position + theirShip.Velocity) < 5))
+                    enemyShips.Any(theirShip => (ship.Position + ship.Velocity).DiagonalDistanceTo(theirShip.Position + theirShip.Velocity) < 5))
                 {
                     commands.Add(Command.Detonate(ship.Id));
                 }
 
-                if (ship.EnergyLeft >= energyUsed)
+                if (energyLeft > 0)
                 {
+                    var sortedEnemies =
+                        from enemyShip in enemyShips
+                        let distance = (enemyShip.Position + enemyShip.Velocity).ManhattanDistanceTo(ship.Position + ship.Velocity)
+                        orderby distance ascending
+                        select enemyShip;
+
+                    var closestEnemy = sortedEnemies.First();
+                    var closestEnemyDistance = (closestEnemy.Position + closestEnemy.Velocity).ManhattanDistanceTo(ship.Position + ship.Velocity);
+
+                    if (closestEnemyDistance < 32)
+                    {
+                        commands.Add(Command.Shoot(ship.Id, closestEnemy.Position + closestEnemy.Velocity, energyLeft));
+                    }
 
                 }
             }
