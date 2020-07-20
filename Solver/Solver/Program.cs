@@ -145,6 +145,8 @@ namespace Solver
         public int Tick { get; set; }
         public List<Ship> Ships { get; set; }
 
+        public GameState() { }
+
         public GameState(LispNode node)
         {
             Tick = int.Parse(node[0].Text);
@@ -172,6 +174,10 @@ namespace Solver
         public int EnergyLeft { get => MaxEnergy - Energy; }
         public int MaxEnergy { get; set; }
         public bool Alive { get; set; }
+
+        public Ship()
+        {
+        }
 
         public Ship(LispNode node)
         {
@@ -298,9 +304,9 @@ namespace Solver
         static readonly List<StaticGameState> StartRequests = new List<StaticGameState>() {
             new StaticGameState()
             {
-                DefaultLife = 1,
+                DefaultLife = 1, // 350 ..
                 DefaultWeapon = 0, // 100 .. 200
-                DefaultRecharge = 16,
+                DefaultRecharge = 32, // 16 ..
                 DefaultSplit = 1
             },
 
@@ -409,7 +415,6 @@ namespace Solver
             return new Point(x, y);
         }
 
-        /*
         static void Search(GameState gameState, Ship ship)
         {
             Algorithims.Search<GameState, Command>(
@@ -429,14 +434,16 @@ namespace Solver
                     var command = Command.Accelerate(ship.Id, new Point(x, y));
                     var newState = new GameState()
                     {
-                        Ships = searchNode.State.Ships.Select(s => ship.
+                        Ships = searchNode.State.Ships.Select(s => s.Id != ship.Id ? s : new Ship()
+                        {
+                            Energy = Common.Bound(s.Energy - s.Recharge, 0, 64)
+                        }).ToList()
                     };
 
-                    yield return command;
+                    yield return searchNode.Create(newState, command);
                 }
             }
         }
-        */
 
         public static List<Command> MakeCommandsRequest(GameState gameState, StaticGameState staticGameState)
         {

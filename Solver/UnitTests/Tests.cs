@@ -208,7 +208,6 @@ namespace UnitTests
             Assert.AreEqual(commands[0].Vector.Y, 1);
         }
 
-        [TestMethod]
         public async Task TestDefaultStartingParams()
         {
             var startingParams = new LispNode()

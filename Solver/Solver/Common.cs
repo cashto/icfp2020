@@ -49,6 +49,21 @@ namespace IcfpUtils
             throw new Exception($"Could not parse: {s}");
         }
 
+        public static int Bound(int x, int min, int max)
+        {
+            if (x < min)
+            {
+                return min;
+            }
+
+            if (x > max)
+            {
+                return max;
+            }
+
+            return x;
+        }
+
         public static async Task<LispNode> Send(LispNode content)
         {
             try
