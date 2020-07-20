@@ -581,6 +581,7 @@ namespace Solver
                 var energyLeft = ship.MaxEnergy - ship.Energy + ship.Recharge;
                 var accelVector = Point.Zero;
                 var gravity = CalculateGravity(ship.Position, staticGameState.PlanetSize);
+                var desiredVelocity = GetDesiredVelocity(ship, staticGameState.PlanetSize);
 
                 try
                 {
@@ -589,7 +590,6 @@ namespace Solver
                 catch (Exception e)
                 {
                     Console.WriteLine($"Search exception {e})");
-                    var desiredVelocity = GetDesiredVelocity(ship, staticGameState.PlanetSize);
                     accelVector = (ship.Velocity + gravity) - desiredVelocity;
                 }
 
@@ -628,7 +628,7 @@ namespace Solver
 
                 if (staticGameState.Role == Role.Defender &&
                     ship.Splits > 1 &&
-                    gameState.Tick > 8 &&
+                    ship.Velocity.ManhattanDistanceTo(desiredVelocity) <= 2 &&
                     ship.Life >= 20)
                 {
                     commands.Add(Command.Split(ship.Id, new LispNode() { new LispNode(10), new LispNode(0), new LispNode(1), new LispNode(1) }));
