@@ -173,9 +173,9 @@ namespace Solver
             PlanetSize = int.Parse(node[3][0].Text);
             UniverseSize = int.Parse(node[3][1].Text);
             DefaultLife = int.Parse(node[4][0].Text);
-            DefaultWeapon = int.Parse(node[5][1].Text);
-            DefaultRecharge = int.Parse(node[5][2].Text);
-            DefaultSplit = int.Parse(node[5][3].Text);
+            DefaultWeapon = int.Parse(node[4][1].Text);
+            DefaultRecharge = int.Parse(node[4][2].Text);
+            DefaultSplit = int.Parse(node[4][3].Text);
         }
     }
 
