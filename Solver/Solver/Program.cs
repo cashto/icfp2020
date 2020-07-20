@@ -418,8 +418,9 @@ namespace Solver
 
         static bool InUniverse(Point p, StaticGameState staticGameState)
         {
+            var planetSize = (staticGameState.PlanetSize * 4) / 3;
             return 
-                (Math.Abs(p.X) > staticGameState.PlanetSize || Math.Abs(p.Y) > staticGameState.PlanetSize) &&
+                (Math.Abs(p.X) > planetSize || Math.Abs(p.Y) > planetSize) &&
                 Math.Abs(p.X) < staticGameState.UniverseSize && Math.Abs(p.Y) < staticGameState.UniverseSize;
         }
 
@@ -589,8 +590,7 @@ namespace Solver
                 }
 
                 if (staticGameState.Role == Role.Attacker &&
-                    enemyShips.Count == 1 &&
-                    enemyShips.Any(theirShip => (ship.Position + ship.Velocity + gravity).DiagonalDistanceTo(theirShip.Position + theirShip.Velocity + gravity) < 5))
+                    enemyShips.All(theirShip => (ship.Position + ship.Velocity + gravity).DiagonalDistanceTo(theirShip.Position + theirShip.Velocity + gravity) < 5))
                 {
                     commands.Add(Command.Detonate(ship.Id));
                 }
