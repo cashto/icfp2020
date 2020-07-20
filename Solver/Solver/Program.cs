@@ -106,6 +106,14 @@ namespace Solver
             { Vector = target };
         }
 
+        public static Command Split(int id, LispNode argument)
+        {
+            return new Command(
+                CommandType.Split,
+                id,
+                Common.Unflatten(argument));
+        }
+
         private Command() { }
 
         private Command(CommandType type, int shipID, LispNode argument1 = null, LispNode argument2 = null)
@@ -307,7 +315,7 @@ namespace Solver
                 DefaultLife = 100,       // 450 .. 500  -> 100
                 DefaultWeapon = 40,     // 100 .. 125  -> 40
                 DefaultRecharge = 12,   // 33 .. 40    -> 12
-                DefaultSplit = 2      // 16 .. ->2
+                DefaultSplit = 9      // 16 .. ->2
             },
         };
 
@@ -616,6 +624,13 @@ namespace Solver
                         commands.Add(Command.Shoot(ship.Id, closestEnemy.Position + closestEnemy.Velocity + gravity, energyLeft));
                     }
 
+                }
+
+                if (staticGameState.Role == Role.Defender &&
+                    ship.Splits > 1 &&
+                    gameState.Tick > 8)
+                {
+                    commands.Add(Command.Split(ship.Id, new LispNode() { new LispNode(1), new LispNode(0), new LispNode(1), new LispNode(1) }));
                 }
             }
 
