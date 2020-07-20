@@ -227,7 +227,7 @@ namespace Solver
                     });
         }
 
-        static LispNode MakeStartRequest(string playerKey, LispNode gameResponse)
+        public static LispNode MakeStartRequest(string playerKey, LispNode gameResponse)
         {
             var staticGameState =
                 gameResponse[1].Text == "2" ?
@@ -243,7 +243,7 @@ namespace Solver
                             new LispNode(staticGameState.DefaultLife),
                             new LispNode(staticGameState.DefaultWeapon + 16),
                             new LispNode(staticGameState.DefaultRecharge + 16),
-                            new LispNode(staticGameState.DefaultSplit)
+                            new LispNode(Math.Max(staticGameState.DefaultSplit, 1))
                         }
                     });
         }
