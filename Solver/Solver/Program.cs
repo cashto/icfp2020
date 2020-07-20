@@ -410,7 +410,7 @@ namespace Solver
                 var desiredVelocity2 = Scale(new Point(ship.Position.Y, -ship.Position.X), 4);
                 var desiredVelocity = (ship.Velocity + gravity - desiredVelocity1).SquareMagnitude() > (ship.Velocity + gravity - desiredVelocity2).SquareMagnitude() ?
                     desiredVelocity2 : desiredVelocity1;
-                var accelVector = desiredVelocity - (ship.Velocity + gravity);
+                var accelVector = (ship.Velocity + gravity) - desiredVelocity;
                 accelVector.X = Math.Max(accelVector.X, -1);
                 accelVector.X = Math.Min(accelVector.X, 1);
                 accelVector.Y = Math.Max(accelVector.Y, -1);
