@@ -4,6 +4,7 @@ using System.Text;
 using IcfpUtils;
 using System.Net.Http;
 using System.Net.Mime;
+using System.Threading;
 using System.Collections.Generic;
 using System.Numerics;
 
@@ -292,12 +293,13 @@ namespace Solver
                     });
         }
 
+        // CASHTO
         static int StartRequestIndex = 0;
         static readonly List<StaticGameState> StartRequests = new List<StaticGameState>() {
             new StaticGameState()
             {
                 DefaultLife = 1,
-                DefaultWeapon = 100,
+                DefaultWeapon = 200,
                 DefaultRecharge = 0,
                 DefaultSplit = 1
             },
@@ -405,6 +407,20 @@ namespace Solver
                 -1;
 
             return new Point(x, y);
+        }
+
+        static void Search(GameState gameState)
+        {
+            Algorithims.Search<GameState, Command>(
+                gameState,
+                new DepthFirstSearch<GameState, Command>(),
+                CancellationToken.None,
+                GenerateMoves);
+        }
+
+        static IEnumerable<SearchNode<GameState, Command>> GenerateMoves(SearchNode<GameState, Command> searchNode)
+        {
+            return null;
         }
 
         public static List<Command> MakeCommandsRequest(GameState gameState, StaticGameState staticGameState)
