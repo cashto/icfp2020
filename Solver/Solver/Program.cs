@@ -306,7 +306,7 @@ namespace Solver
             {
                 DefaultLife = 1, // 350 ..
                 DefaultWeapon = 0, // 100 .. 200
-                DefaultRecharge = 64, // 32 ..
+                DefaultRecharge = 48, // 32 .. 64
                 DefaultSplit = 1
             },
 
@@ -417,19 +417,30 @@ namespace Solver
 
         static void Search(GameState gameState, StaticGameState staticGameState, Ship ship)
         {
-            Algorithims.Search<GameState, Command>(
+            var states = Algorithims.Search<GameState, Command>(
                 gameState,
                 new DepthFirstSearch<GameState, Command>(),
                 CancellationToken.None,
                 (sn) => GenerateMoves(sn, staticGameState, ship));
-        }
 
+            var orderedStates =
+                from state in states
+                where true /* check planet, world collision */
+                let x = new { state = state, score = 0 } /*compute scores */
+                orderby x.score descending
+                select x.state;
+        }
 
         static IEnumerable<SearchNode<GameState, Command>> GenerateMoves(
             SearchNode<GameState, Command> searchNode, 
             StaticGameState staticGameState,
             Ship ship)
         {
+            if (searchNode.Depth > 3)
+            {
+                yield break;
+            }
+
             foreach (var x in Enumerable.Range(-1, 3))
             {
                 foreach (var y in Enumerable.Range(-1, 3))
@@ -437,13 +448,17 @@ namespace Solver
                     var command = Command.Accelerate(ship.Id, new Point(x, y));
                     var newState = new GameState()
                     {
-                        Ships = searchNode.State.Ships.Select(s => s.Id != ship.Id ? s : new Ship()
-                        {
-                            Energy = Common.Bound(s.Energy - s.Recharge, 0, 64),
-                            Position = s.Position - command.Vector + CalculateGravity(s.Position, staticGameState.PlanetSize),
-                            Velocity = s.Velocity + CalculateGravity(s.Position, staticGameState.PlanetSize),
-                            Life = s.Life - (command.Vector.SquareMagnitude() == 0 ? 0 : 1)
-                        }).ToList()
+                        Ships = (
+                            from s in searchNode.State.Ships
+                            let gravity = CalculateGravity(s.Position, staticGameState.PlanetSize)
+                            let delta = s.Id == ship.Id ? command.Vector : Point.Zero
+                            select new Ship()
+                            {
+                                Energy = Common.Bound(s.Energy - s.Recharge, 0, 64),
+                                Position = s.Position - delta + gravity,
+                                Velocity = s.Velocity + gravity,
+                                Life = s.Life - (delta.SquareMagnitude() == 0 ? 0 : 1)
+                            }).ToList()
                     };
 
                     yield return searchNode.Create(newState, command);
