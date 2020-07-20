@@ -432,6 +432,29 @@ namespace Solver
             return staticGameState.Role == Role.Attacker ? -distanceMin : distanceMin;
         }
 
+        static int CheckAlive(StaticGameState staticGameState, Ship ship)
+        {
+            int max = 12;
+
+            var p = ship.Position;
+            var v = ship.Velocity;
+
+            foreach (var i in Enumerable.Range(0, 12))
+            {
+                var gravity = CalculateGravity(p, staticGameState.PlanetSize);
+
+                if (!InUniverse(p, staticGameState))
+                {
+                    return i;
+                }
+
+                v = v + gravity;
+                p = p + v;
+            }
+
+            return max;
+        }
+
         static Command Search(GameState originalGameState, StaticGameState staticGameState, Ship ship)
         {
             var planetSize = staticGameState.PlanetSize;
@@ -449,10 +472,10 @@ namespace Solver
                 from node in nodes
                 where node.Depth == 4
                 let myShip = GetShip(node.State, ship.Id)
-                //where myShip.Velocity.ManhattanDistanceTo(GetDesiredVelocity(myShip, planetSize)) < 5
                 where InUniverse(myShip.Position, staticGameState)
+                let alive = CheckAlive(staticGameState, myShip)
                 let score = GetScore(node.State, staticGameState, myShip)
-                orderby score descending
+                orderby alive descending, score descending
                 select node;
 
             orderedNodes = orderedNodes.ToList();
@@ -537,8 +560,9 @@ namespace Solver
                 {
                     accelVector = Search(gameState, staticGameState, ship).Vector;
                 }
-                catch
+                catch (Exception e)
                 {
+                    Console.WriteLine($"Search exception {e})");
                     var gravity = CalculateGravity(ship.Position, staticGameState.PlanetSize);
                     var desiredVelocity = GetDesiredVelocity(ship, staticGameState.PlanetSize);
                     accelVector = (ship.Velocity + gravity) - desiredVelocity;
