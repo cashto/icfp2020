@@ -185,6 +185,22 @@ namespace UnitTests
         }
 
         [TestMethod]
+        public void TestGravity()
+        {
+            Assert.AreEqual(new Point(-1, 0), Program.CalculateGravity(new Point(6, 3), 0));
+            Assert.AreEqual(new Point(-1, 0), Program.CalculateGravity(new Point(6, -3), 0));
+
+            Assert.AreEqual(new Point(1, 0), Program.CalculateGravity(new Point(-6, 3), 0));
+            Assert.AreEqual(new Point(1, 0), Program.CalculateGravity(new Point(-6, -3), 0));
+
+            Assert.AreEqual(new Point(0, -1), Program.CalculateGravity(new Point(3, 6), 0));
+            Assert.AreEqual(new Point(0, -1), Program.CalculateGravity(new Point(-3, 6), 0));
+
+            Assert.AreEqual(new Point(0, 1), Program.CalculateGravity(new Point(3, -6), 0));
+            Assert.AreEqual(new Point(0, 1), Program.CalculateGravity(new Point(-3, -6), 0));
+        }
+
+        [TestMethod]
         public void TestSolver()
         {
             var input = "(1 2 () ())";

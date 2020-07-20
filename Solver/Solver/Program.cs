@@ -409,13 +409,13 @@ namespace Solver
             return ans;
         }
 
-        static Point CalculateGravity(Point ship, int planetSize)
+        public static Point CalculateGravity(Point ship, int planetSize)
         {
-            if (ship.X < ship.Y && ship.X > -ship.Y)
+            if (ship.X > ship.Y && ship.X > -ship.Y)
             {
                 return new Point(-1, 0);
             }
-            else if (ship.X > ship.Y && ship.X < -ship.Y)
+            else if (ship.X < ship.Y && ship.X < -ship.Y)
             {
                 return new Point(1, 0);
             }
