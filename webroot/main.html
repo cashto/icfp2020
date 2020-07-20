@@ -111,7 +111,7 @@
         return bold("ShipId: ") + (ship[0] == 0 ? "attacker" : "defender") + ship[1] + "<br>" +
             bold("Position: ") + JSON.stringify(ship[2]) + "<br>" +
             bold("Velocity: ") + JSON.stringify(ship[3]) + "<br>" +
-            bold("Stats: ") + "life:" + ship[4][0] + " weapon:" + ship[4][1] + " fuel:" + ship[4][2] + " split:" + ship[4][3] + "<br>" +
+            bold("Stats: ") + "life:" + ship[4][0] + " weapon:" + ship[4][1] + " recharge:" + ship[4][2] + " split:" + ship[4][3] + "<br>" +
             bold("Energy: ") + (ship[6] - ship[5]) + " / " + ship[6] + "<br>" +
             bold("Raw: ") + JSON.stringify(ship) + "<br>";
     }

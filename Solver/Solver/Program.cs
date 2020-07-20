@@ -164,6 +164,8 @@ namespace Solver
         public int DefaultRecharge { get; set; }
         public int DefaultSplit { get; set; }
 
+        public StaticGameState() { }
+
         public StaticGameState(LispNode node)
         {
             MaxTicks = int.Parse(node[0].Text);
@@ -227,7 +229,11 @@ namespace Solver
 
         static LispNode MakeStartRequest(string playerKey, LispNode gameResponse)
         {
-            var staticGameState = new StaticGameState(gameResponse[2]);
+            var staticGameState =
+                gameResponse[1].Text == "2" ?
+                new StaticGameState() :
+                new StaticGameState(gameResponse[2]);
+
             return 
                 Common.Unflatten(
                     new LispNode() { 
