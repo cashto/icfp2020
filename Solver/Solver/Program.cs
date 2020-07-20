@@ -230,7 +230,7 @@ namespace Solver
         public static LispNode MakeStartRequest(string playerKey, LispNode gameResponse)
         {
             var staticGameState =
-                gameResponse[1].Text == "2" ?
+                gameResponse[1].Text == "0" ?
                 new StaticGameState() { DefaultLife = 10, DefaultRecharge = -6, DefaultWeapon = -6, DefaultSplit = 1 } :
                 new StaticGameState(gameResponse[2]);
 
