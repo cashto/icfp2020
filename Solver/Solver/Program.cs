@@ -314,7 +314,7 @@ namespace Solver
             {
                 DefaultLife = 100,       // 450 .. 500  -> 100
                 DefaultWeapon = 40,     // 100 .. 125  -> 40
-                DefaultRecharge = 12,   // 33 .. 40    -> 12
+                DefaultRecharge = 14,   // 33 .. 40    -> 12
                 DefaultSplit = 9      // 16 .. ->2
             },
         };
