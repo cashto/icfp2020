@@ -304,10 +304,10 @@ namespace Solver
         static readonly List<StaticGameState> StartRequests = new List<StaticGameState>() {
             new StaticGameState()
             {
-                DefaultLife = 0, // 450 .. 500
-                DefaultWeapon = 0, // 100 .. 125
-                DefaultRecharge = 0, // 33 .. 40
-                DefaultSplit = 16 // 2 ..
+                DefaultLife = 100,       // 450 .. 500  -> 100
+                DefaultWeapon = 40,     // 100 .. 125  -> 40
+                DefaultRecharge = 12,   // 33 .. 40    -> 12
+                DefaultSplit = 2      // 16 .. ->2
             },
         };
 
@@ -354,7 +354,7 @@ namespace Solver
 
         public static LispNode MakeStartRequest(string playerKey, LispNode gameResponse)
         {
-            var staticGameState = StartRequests[StartRequestIndex++];
+            var staticGameState = StartRequests[0];
 
             return 
                 Common.Unflatten(
@@ -447,9 +447,9 @@ namespace Solver
 
             var orderedNodes =
                 from node in nodes
-                where node.Depth == 3
+                where node.Depth == 4
                 let myShip = GetShip(node.State, ship.Id)
-                where myShip.Velocity.ManhattanDistanceTo(GetDesiredVelocity(myShip, planetSize)) < 3
+                //where myShip.Velocity.ManhattanDistanceTo(GetDesiredVelocity(myShip, planetSize)) < 5
                 where InUniverse(myShip.Position, staticGameState)
                 let score = GetScore(node.State, staticGameState, myShip)
                 orderby score descending
@@ -475,7 +475,7 @@ namespace Solver
             StaticGameState staticGameState,
             Ship ship)
         {
-            if (searchNode.Depth > 3)
+            if (searchNode.Depth >= 4)
             {
                 yield break;
             }
@@ -499,6 +499,8 @@ namespace Solver
                             let delta = s.Id == ship.Id ? command.Vector : Point.Zero
                             select new Ship()
                             {
+                                Id = s.Id,
+                                Role = s.Role,
                                 Energy = Common.Bound(s.Energy - s.Recharge, 0, 64),
                                 Position = s.Position - delta + gravity,
                                 Velocity = s.Velocity + gravity,
@@ -531,16 +533,16 @@ namespace Solver
                 var energyLeft = ship.MaxEnergy - ship.Energy;
                 var accelVector = Point.Zero;
 
-                //try 
-                //{ 
-                    accelVector = Search(gameState, staticGameState, ship).Vector; 
-                //} 
-                //catch 
-                //{
-                //    var gravity = CalculateGravity(ship.Position, staticGameState.PlanetSize);
-                //    var desiredVelocity = GetDesiredVelocity(ship, staticGameState.PlanetSize);
-                //    accelVector = (ship.Velocity + gravity) - desiredVelocity;
-                //}
+                try
+                {
+                    accelVector = Search(gameState, staticGameState, ship).Vector;
+                }
+                catch
+                {
+                    var gravity = CalculateGravity(ship.Position, staticGameState.PlanetSize);
+                    var desiredVelocity = GetDesiredVelocity(ship, staticGameState.PlanetSize);
+                    accelVector = (ship.Velocity + gravity) - desiredVelocity;
+                }
 
                 accelVector.X = Common.Bound(accelVector.X, -1, 1);
                 accelVector.Y = Common.Bound(accelVector.Y, -1, 1);
