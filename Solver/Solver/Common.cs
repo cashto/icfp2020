@@ -65,14 +65,14 @@ namespace IcfpUtils
                     }).Result;
 
                 var response = Demodulate(result.Content.ReadAsStringAsync().Result).Item1;
-
+                Console.WriteLine($"  -> got {response}");
                 Console.WriteLine($"Sent [{Common.Flatten(content)}], received [{Common.Flatten(response)}]");
 
                 return response;
             }
             catch (Exception e)
             {
-                Console.WriteLine($"ERROR: Sent [{Common.Flatten(content)}], received {e}");
+                Console.WriteLine($"ERROR: Sent [content], received {e}");
                 throw;
             }
         }

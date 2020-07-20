@@ -182,6 +182,17 @@ namespace UnitTests
             Assert.AreEqual(test.ToString(), flat.ToString());
         }
 
+        [TestMethod]
+        public void TestSolver()
+        {
+            //var gameResponse = Common.Unflatten(Lisp.Parse("(1 2 () ())"));
+            //gameResponse = Send(serverUrl, MakeStartRequest(playerKey, gameResponse));
+            //while (true)
+            //{
+            //    gameResponse = Send(serverUrl, MakeCommandsRequest(playerKey, gameResponse));
+            //}
+        }
+
         private void TestEvaluate(string fn, string reference, Dictionary<string, LispNode> symbols = null)
         {
 /*
