@@ -304,7 +304,7 @@ namespace Solver
         static readonly List<StaticGameState> StartRequests = new List<StaticGameState>() {
             new StaticGameState()
             {
-                DefaultLife = 500, // 350 ..
+                DefaultLife = 425, // 350 .. 500
                 DefaultWeapon = 0, // 100 .. 125
                 DefaultRecharge = 0, // 33 .. 40
                 DefaultSplit = 1
@@ -422,25 +422,35 @@ namespace Solver
                 Math.Abs(p.X) < staticGameState.UniverseSize && Math.Abs(p.Y) < staticGameState.UniverseSize;
         }
 
-        static Command Search(GameState gameState, StaticGameState staticGameState, Ship ship)
+        static int GetScore(GameState gameState, StaticGameState staticGameState, Ship myShip)
+        {
+            var enemyShips = gameState.Ships.Where(s => s.Role != staticGameState.Role).ToList();
+
+            var distanceSum = enemyShips.Select(s => s.Position.ManhattanDistanceTo(myShip.Position)).Sum();
+
+            return staticGameState.Role == Role.Attacker ? -distanceSum : distanceSum;
+        }
+
+        static Command Search(GameState originalGameState, StaticGameState staticGameState, Ship ship)
         {
             var planetSize = staticGameState.PlanetSize;
             var universeSize = staticGameState.UniverseSize;
 
             var nodes = Algorithims.Search<GameState, Command>(
-                gameState,
+                originalGameState,
                 new DepthFirstSearch<GameState, Command>(),
                 CancellationToken.None,
                 (sn) => GenerateMoves(sn, staticGameState, ship));
 
             var orderedNodes =
                 from node in nodes
+                where node.Depth == 3
                 let myShip = GetShip(node.State, ship.Id)
                 where myShip.Velocity.ManhattanDistanceTo(GetDesiredVelocity(myShip, planetSize)) < 3
                 where InUniverse(myShip.Position, staticGameState)
-                let x = new { node = node, score = 0 } /*compute scores */
-                orderby x.score descending
-                select x.node;
+                let score = GetScore(node.State, staticGameState, myShip)
+                orderby score descending
+                select node;
 
             var theNode = orderedNodes.First();
             Console.WriteLine("Moves: " + string.Join("; ", theNode.Moves.Select(move => move.Vector)));
