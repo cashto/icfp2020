@@ -306,7 +306,7 @@ namespace Solver
             {
                 DefaultLife = 1, // 350 ..
                 DefaultWeapon = 0, // 100 .. 200
-                DefaultRecharge = 32, // 16 ..
+                DefaultRecharge = 64, // 32 ..
                 DefaultSplit = 1
             },
 
@@ -415,17 +415,20 @@ namespace Solver
             return new Point(x, y);
         }
 
-        static void Search(GameState gameState, Ship ship)
+        static void Search(GameState gameState, StaticGameState staticGameState, Ship ship)
         {
             Algorithims.Search<GameState, Command>(
                 gameState,
                 new DepthFirstSearch<GameState, Command>(),
                 CancellationToken.None,
-                (sn) => GenerateMoves(sn, ship));
+                (sn) => GenerateMoves(sn, staticGameState, ship));
         }
 
 
-        static IEnumerable<SearchNode<GameState, Command>> GenerateMoves(SearchNode<GameState, Command> searchNode, Ship ship)
+        static IEnumerable<SearchNode<GameState, Command>> GenerateMoves(
+            SearchNode<GameState, Command> searchNode, 
+            StaticGameState staticGameState,
+            Ship ship)
         {
             foreach (var x in Enumerable.Range(-1, 3))
             {
@@ -436,7 +439,10 @@ namespace Solver
                     {
                         Ships = searchNode.State.Ships.Select(s => s.Id != ship.Id ? s : new Ship()
                         {
-                            Energy = Common.Bound(s.Energy - s.Recharge, 0, 64)
+                            Energy = Common.Bound(s.Energy - s.Recharge, 0, 64),
+                            Position = s.Position - command.Vector + CalculateGravity(s.Position, staticGameState.PlanetSize),
+                            Velocity = s.Velocity + CalculateGravity(s.Position, staticGameState.PlanetSize),
+                            Life = s.Life - (command.Vector.SquareMagnitude() == 0 ? 0 : 1)
                         }).ToList()
                     };
 
