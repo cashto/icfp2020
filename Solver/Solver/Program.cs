@@ -260,7 +260,7 @@ namespace Solver
                     commandsList);
             }
 
-            ans[1].Children[1] = commandsList;
+            ans[1].Children[1] = new LispNode(new LispNode(new LispNode("cons"), commandsList), new LispNode("nil"));
             return ans;
         }
 
