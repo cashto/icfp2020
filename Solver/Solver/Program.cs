@@ -304,9 +304,9 @@ namespace Solver
         static readonly List<StaticGameState> StartRequests = new List<StaticGameState>() {
             new StaticGameState()
             {
-                DefaultLife = 1, // 350 ..
-                DefaultWeapon = 0, // 100 .. 200
-                DefaultRecharge = 33, // 32 .. 40
+                DefaultLife = 0, // 350 ..
+                DefaultWeapon = 150, // 100 .. 200
+                DefaultRecharge = 0, // 33 .. 40
                 DefaultSplit = 1
             },
 
@@ -417,7 +417,9 @@ namespace Solver
 
         static bool InUniverse(Point p, StaticGameState staticGameState)
         {
-            return false;
+            return 
+                Math.Abs(p.X) > staticGameState.PlanetSize && Math.Abs(p.Y) > staticGameState.PlanetSize &&
+                Math.Abs(p.X) < staticGameState.UniverseSize && Math.Abs(p.Y) < staticGameState.UniverseSize;
         }
 
         static void Search(GameState gameState, StaticGameState staticGameState, Ship ship)
@@ -435,9 +437,7 @@ namespace Solver
                 from node in nodes
                 let myShip = GetShip(node.State, ship.Id)
                 where myShip.Velocity.ManhattanDistanceTo(GetDesiredVelocity(myShip, planetSize)) < 3
-                where Math.Abs(myShip.Position.X) > planetSize && Math.Abs(myShip.Position.Y) > planetSize
-                where Math.Abs(myShip.Position.X) < universeSize && Math.Abs(myShip.Position.Y) > universeSize
-                where true /* check planet, world collision */
+                where InUniverse(myShip.Position, staticGameState)
                 let x = new { node = node, score = 0 } /*compute scores */
                 orderby x.score descending
                 select x.node;
