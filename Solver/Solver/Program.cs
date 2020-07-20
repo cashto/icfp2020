@@ -296,8 +296,8 @@ namespace Solver
         static readonly List<StaticGameState> StartRequests = new List<StaticGameState>() {
             new StaticGameState()
             {
-                DefaultLife = 128,
-                DefaultWeapon = 8,
+                DefaultLife = 350,
+                DefaultWeapon = 100,
                 DefaultRecharge = 8,
                 DefaultSplit = 1
             },
@@ -415,8 +415,8 @@ namespace Solver
             foreach (var ship in myShips)
             {
                 var gravity = CalculateGravity(ship.Position, staticGameState.PlanetSize);
-                var desiredVelocity1 = Scale(new Point(ship.Position.Y, -ship.Position.X), 5);
-                var desiredVelocity2 = Scale(new Point(-ship.Position.Y, ship.Position.X), 5);
+                var desiredVelocity1 = Scale(new Point(ship.Position.Y, -ship.Position.X), 8);
+                var desiredVelocity2 = Scale(new Point(-ship.Position.Y, ship.Position.X), 8);
                 var desiredVelocity = ((ship.Velocity + gravity) - desiredVelocity1).SquareMagnitude() > ((ship.Velocity + gravity) - desiredVelocity2).SquareMagnitude() ?
                     desiredVelocity2 : desiredVelocity1;
                 var accelVector = (ship.Velocity + gravity) - desiredVelocity;
