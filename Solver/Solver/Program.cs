@@ -304,9 +304,9 @@ namespace Solver
         static readonly List<StaticGameState> StartRequests = new List<StaticGameState>() {
             new StaticGameState()
             {
-                DefaultLife = 425, // 350 .. 500
-                DefaultWeapon = 0, // 100 .. 125
-                DefaultRecharge = 0, // 33 .. 40
+                DefaultLife = 100, // 450 .. 500
+                DefaultWeapon = 40, // 100 .. 125
+                DefaultRecharge = 12, // 33 .. 40
                 DefaultSplit = 1
             },
 
@@ -426,9 +426,9 @@ namespace Solver
         {
             var enemyShips = gameState.Ships.Where(s => s.Role != staticGameState.Role).ToList();
 
-            var distanceSum = enemyShips.Select(s => s.Position.ManhattanDistanceTo(myShip.Position)).Sum();
+            var distanceMin = enemyShips.Select(s => s.Position.ManhattanDistanceTo(myShip.Position)).Min();
 
-            return staticGameState.Role == Role.Attacker ? -distanceSum : distanceSum;
+            return staticGameState.Role == Role.Attacker ? -distanceMin : distanceMin;
         }
 
         static Command Search(GameState originalGameState, StaticGameState staticGameState, Ship ship)
@@ -523,15 +523,16 @@ namespace Solver
             var commands = new List<Command>();
             foreach (var ship in myShips)
             {
-                var gravity = CalculateGravity(ship.Position, staticGameState.PlanetSize);
-                var desiredVelocity = GetDesiredVelocity(ship, staticGameState.PlanetSize);
-                var accelVector = (ship.Velocity + gravity) - desiredVelocity;
-                accelVector.X = Math.Max(accelVector.X, -1);
-                accelVector.X = Math.Min(accelVector.X, 1);
-                accelVector.Y = Math.Max(accelVector.Y, -1);
-                accelVector.Y = Math.Min(accelVector.Y, 1);
+                //var gravity = CalculateGravity(ship.Position, staticGameState.PlanetSize);
+                //var desiredVelocity = GetDesiredVelocity(ship, staticGameState.PlanetSize);
+                //var accelVector = (ship.Velocity + gravity) - desiredVelocity;
+                //accelVector.X = Math.Max(accelVector.X, -1);
+                //accelVector.X = Math.Min(accelVector.X, 1);
+                //accelVector.Y = Math.Max(accelVector.Y, -1);
+                //accelVector.Y = Math.Min(accelVector.Y, 1);
 
                 var energyLeft = ship.MaxEnergy - ship.Energy;
+                var accelVector = Search(gameState, staticGameState, ship).Vector;
                 if (accelVector.X != 0 && accelVector.Y != 0 && energyLeft >= 8 && ship.Life > 0)
                 {
                     commands.Add(Command.Accelerate(ship.Id, accelVector));
