@@ -131,7 +131,7 @@ namespace Solver
         public Point Velocity { get; set; }
         public int Life { get; set; }
         public int Weapon { get; set; }
-        public int Fuel { get; set; }
+        public int Recharge { get; set; }
         public int Splits { get; set; }
         public int Energy { get; set; }
         public int MaxEnergy { get; set; }
@@ -145,7 +145,7 @@ namespace Solver
             Velocity = new Point() { X = int.Parse(node[3][0].Text), Y = int.Parse(node[3][1].Text) };
             Life = int.Parse(node[4][0].Text);
             Weapon = int.Parse(node[4][1].Text);
-            Fuel = int.Parse(node[4][2].Text);
+            Recharge = int.Parse(node[4][2].Text);
             Splits = int.Parse(node[4][3].Text);
             Energy = int.Parse(node[5].Text);
             MaxEnergy = int.Parse(node[6].Text);
@@ -159,6 +159,10 @@ namespace Solver
         public Role Role { get; set; }
         public int PlanetSize { get; set; }
         public int UniverseSize { get; set; }
+        public int DefaultLife { get; set; }
+        public int DefaultWeapon { get; set; }
+        public int DefaultRecharge { get; set; }
+        public int DefaultSplit { get; set; }
 
         public StaticGameState(LispNode node)
         {
@@ -166,6 +170,10 @@ namespace Solver
             Role = (Role)int.Parse(node[1].Text);
             PlanetSize = int.Parse(node[3][0].Text);
             UniverseSize = int.Parse(node[3][1].Text);
+            DefaultLife = int.Parse(node[5][0].Text);
+            DefaultWeapon = int.Parse(node[5][1].Text);
+            DefaultRecharge = int.Parse(node[5][2].Text);
+            DefaultSplit = int.Parse(node[5][3].Text);
         }
     }
 
@@ -219,16 +227,17 @@ namespace Solver
 
         static LispNode MakeStartRequest(string playerKey, LispNode gameResponse)
         {
+            var staticGameState = new StaticGameState(gameResponse[2]);
             return 
                 Common.Unflatten(
                     new LispNode() { 
                         new LispNode("3"), 
                         new LispNode(playerKey), 
                         new LispNode() {
-                            new LispNode("10"),
-                            new LispNode("10"),
-                            new LispNode("10"),
-                            new LispNode("1")
+                            new LispNode(staticGameState.DefaultLife),
+                            new LispNode(staticGameState.DefaultWeapon + 16),
+                            new LispNode(staticGameState.DefaultRecharge + 16),
+                            new LispNode(staticGameState.DefaultSplit)
                         }
                     });
         }
@@ -275,7 +284,7 @@ namespace Solver
                 var desiredVelocity2 = Scale(new Point(ship.Position.Y, -ship.Position.X), 4);
                 var desiredVelocity = (ship.Velocity - desiredVelocity1).SquareMagnitude() > (ship.Velocity - desiredVelocity2).SquareMagnitude() ?
                     desiredVelocity2 : desiredVelocity1;
-                var accelVector = ship.Velocity - desiredVelocity;
+                var accelVector = desiredVelocity - ship.Velocity;
                 accelVector.X = Math.Max(accelVector.X, -1);
                 accelVector.X = Math.Min(accelVector.X, 1);
                 accelVector.Y = Math.Max(accelVector.Y, -1);
