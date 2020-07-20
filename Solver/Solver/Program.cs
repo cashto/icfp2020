@@ -571,6 +571,8 @@ namespace Solver
             return desiredVelocity;
         }
 
+        static Random rand = new Random();
+
         public static List<Command> MakeCommandsRequest(GameState gameState, StaticGameState staticGameState)
         {
             var myShips = gameState.Ships.Where(i => i.Role == staticGameState.Role);
@@ -598,7 +600,11 @@ namespace Solver
 
                 if (accelVector.X != 0 && accelVector.Y != 0 && energyLeft >= 8 && ship.Life > 0)
                 {
-                    commands.Add(Command.Accelerate(ship.Id, accelVector));
+                    if (ship.Life > 10 || (rand.Next(4) == 0))
+                    {
+                        commands.Add(Command.Accelerate(ship.Id, accelVector));
+                    }
+
                     energyLeft -= 8;
                 }
 
