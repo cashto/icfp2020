@@ -383,6 +383,21 @@ namespace Solver
             return ans;
         }
 
+        static Point CalculateGravity(Point ship, int planetSize)
+        {
+            var x =
+                ship.X < -planetSize ? 1 :
+                ship.X < planetSize ? 0 :
+                -1;
+
+            var y =
+                ship.Y < -planetSize ? 1 :
+                ship.Y < planetSize ? 0 :
+                -1;
+
+            return new Point(x, y);
+        }
+
         static List<Command> MakeCommandsRequest(GameState gameState, StaticGameState staticGameState)
         {
             var myShips = gameState.Ships.Where(i => i.Role == staticGameState.Role);
@@ -390,11 +405,12 @@ namespace Solver
             var commands = new List<Command>();
             foreach (var ship in myShips)
             {
+                var gravity = CalculateGravity(ship.Position, staticGameState.PlanetSize);
                 var desiredVelocity1 = Scale(new Point(-ship.Position.Y, ship.Position.X), 4);
                 var desiredVelocity2 = Scale(new Point(ship.Position.Y, -ship.Position.X), 4);
-                var desiredVelocity = (ship.Velocity - desiredVelocity1).SquareMagnitude() > (ship.Velocity - desiredVelocity2).SquareMagnitude() ?
+                var desiredVelocity = (ship.Velocity + gravity - desiredVelocity1).SquareMagnitude() > (ship.Velocity + gravity - desiredVelocity2).SquareMagnitude() ?
                     desiredVelocity2 : desiredVelocity1;
-                var accelVector = desiredVelocity - ship.Velocity;
+                var accelVector = desiredVelocity - (ship.Velocity + gravity);
                 accelVector.X = Math.Max(accelVector.X, -1);
                 accelVector.X = Math.Min(accelVector.X, 1);
                 accelVector.Y = Math.Max(accelVector.Y, -1);
