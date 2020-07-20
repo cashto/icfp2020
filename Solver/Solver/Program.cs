@@ -204,11 +204,21 @@ namespace Solver
             var playerKey = args[1];
 
             var gameResponse = Send(serverUrl, MakeJoinRequest(playerKey));
-            gameResponse = Send(serverUrl, MakeStartRequest(playerKey, gameResponse));
+
+            do
+            {
+                gameResponse = Send(serverUrl, MakeStartRequest(playerKey, gameResponse));
+            } while (!IsSuccess(gameResponse));
+            
             while (true)
             {
                 gameResponse = Send(serverUrl, MakeCommandsRequest(playerKey, gameResponse));
             }
+        }
+
+        static bool IsSuccess(LispNode node)
+        {
+            return node[0].Text == "1";
         }
 
         static LispNode Send(string serverUrl, LispNode request)
@@ -247,7 +257,7 @@ namespace Solver
         public static LispNode MakeStartRequest(string playerKey, LispNode gameResponse)
         {
             var staticGameState = new StaticGameState(gameResponse[2]);
-            int extraFactor = gameResponse[0].Text == "1" ? 1 : 0;
+            int extraFactor = IsSuccess(gameResponse) ? 1 : 0;
 
             return 
                 Common.Unflatten(
@@ -271,7 +281,7 @@ namespace Solver
 
         public static LispNode MakeCommandsRequest(string playerKey, LispNode gameResponse)
         {
-            var commands = (gameResponse[0].Text != "1") ?
+            var commands = !IsSuccess(gameResponse) ?
                 new List<Command>() :
                 MakeCommandsRequest(
                     new GameState(gameResponse[3]), 
